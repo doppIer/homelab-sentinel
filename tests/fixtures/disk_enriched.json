@@ -1,0 +1,4 @@
+{"state": "source=disk host=homeserver mount=/ used=97% free=4.1G trend=+2G/day estimated_full_in=2 days threshold_breached=yes (warn at 85%)",
+ "questions": {"severity": {"type": "choice", "instructions": "How should a homelab operator treat this event?",
+  "criteria": {"noise": "routine log line, nothing to do", "info": "worth a line in the daily summary, no action",
+   "action_needed": "operator should fix it within a day", "critical": "service down, data at risk, or failure within hours"}}}}

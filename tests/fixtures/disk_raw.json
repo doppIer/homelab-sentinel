@@ -1,0 +1,4 @@
+{"state": "[homeserver] df: /dev/sda1 97% used (4.1G free of 117G). Growing 2G/day. Jellyfin transcodes in /var/lib/jellyfin/transcodes.",
+ "questions": {"severity": {"type": "choice", "instructions": "How should a homelab operator treat this event?",
+  "criteria": {"noise": "routine log line, nothing to do", "info": "worth a line in the daily summary, no action",
+   "action_needed": "operator should fix it within a day", "critical": "service down, data at risk, or failure within hours"}}}}

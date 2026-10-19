@@ -7,7 +7,7 @@ class Coalescer:
         self.pending = {}
 
     def add(self, event, now=None):
-        now = now or time.time()
+        now = time.time() if now is None else now
         group = (event.source, event.subject)
         if group in self.pending:
             self.pending[group]["events"].append(event)
@@ -16,7 +16,7 @@ class Coalescer:
             self.pending[group] = {"events": [event], "last": now}
 
     def ready(self, now=None):
-        now = now or time.time()
+        now = time.time() if now is None else now
         done = [g for g, p in self.pending.items() if now - p["last"] >= self.window]
         out = []
         for group in done:

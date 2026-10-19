@@ -12,6 +12,7 @@ from decision_patterns.log_triage import LogTriage
 from sentinel.coalesce import Coalescer
 from sentinel.collectors.docker_events import DockerEvents
 from sentinel.collectors.netdata import NetdataAlarms
+from sentinel.notify import Telegram
 
 ICONS = {"drop": ".", "digest": "i", "notify": "!", "escalate": "!!"}
 
@@ -65,7 +66,8 @@ def main():
         threading.Thread(target=pump, args=(source, inbox), daemon=True).start()
 
     coalescer = Coalescer(window=float(os.getenv("COALESCE_SECONDS", "15")))
-    print(f"sentinel up: {len(sources)} sources, decisions -> {log_path}", flush=True)
+    telegram = Telegram.from_env()
+    print(f"sentinel up: {len(sources)} sources, telegram={'on' if telegram else 'off'}, decisions -> {log_path}", flush=True)
 
     while True:
         try:
@@ -81,6 +83,11 @@ def main():
             record(log_path, event, result)
             stamp = time.strftime("%H:%M:%S", time.localtime(event.ts))
             print(f"{stamp} [{ICONS[result.route]:>2}] {result.route:<8} {result.choice:<13} {result.confidence:.2f} {result.latency_ms:>6.0f}ms {event.source}/{event.subject} {event.kind} | {result.reason}", flush=True)
+            if telegram:
+                try:
+                    telegram.send_decision(event, result)
+                except Exception as e:
+                    print(f"[telegram error] {type(e).__name__}: {e}", flush=True)
 
 
 if __name__ == "__main__":

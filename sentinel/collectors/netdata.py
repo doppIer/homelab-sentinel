@@ -19,7 +19,7 @@ class NetdataAlarms:
             return json.load(r).get("alarms", {})
 
     def to_event(self, alarm_id, alarm, previous, now=None):
-        now = now or time.time()
+        now = time.time() if now is None else now
         since = alarm.get("last_status_change") or now
         minutes = max(0, int((now - since) / 60))
         status = alarm.get("status", "UNKNOWN")

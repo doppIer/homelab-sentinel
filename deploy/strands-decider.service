@@ -1,0 +1,18 @@
+[Unit]
+Description=Strands Decider 2B for homelab-sentinel
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=h4n
+WorkingDirectory=/home/h4n/homelab-sentinel
+Environment=HF_HUB_OFFLINE=1
+ExecStart=/home/h4n/homelab-sentinel/.venv/bin/strands-decider serve StrandsAgents/strands-decider-2B-qwen3.5-v1-2610 --device cpu --port 8765
+Restart=on-failure
+RestartSec=15
+MemoryMax=10G
+MemorySwapMax=0
+Nice=10
+
+[Install]
+WantedBy=multi-user.target

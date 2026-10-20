@@ -1,0 +1,191 @@
+[
+ {
+  "fixture": "disk_enriched",
+  "expected": "action_needed",
+  "latency_ms": 9540.0,
+  "answers": {
+   "what": {
+    "type": "choice",
+    "choice": "resource_risk",
+    "probabilities": {
+     "routine": 0.0156,
+     "planned_change": 0.0042,
+     "recovered_failure": 0.0046,
+     "ongoing_outage": 0.0073,
+     "resource_risk": 0.9683
+    },
+    "confidence": 0.9604
+   },
+   "failure": {
+    "type": "noul",
+    "noul": 0.3934
+   },
+   "down": {
+    "type": "noul",
+    "noul": 0.285
+   }
+  }
+ },
+ {
+  "fixture": "disk_raw",
+  "expected": "action_needed",
+  "latency_ms": 9548.92,
+  "answers": {
+   "what": {
+    "type": "choice",
+    "choice": "resource_risk",
+    "probabilities": {
+     "routine": 0.1019,
+     "planned_change": 0.0149,
+     "recovered_failure": 0.0104,
+     "ongoing_outage": 0.0129,
+     "resource_risk": 0.8599
+    },
+    "confidence": 0.8249
+   },
+   "failure": {
+    "type": "noul",
+    "noul": 0.179
+   },
+   "down": {
+    "type": "noul",
+    "noul": 0.1227
+   }
+  }
+ },
+ {
+  "fixture": "docker_app_down",
+  "expected": "critical",
+  "latency_ms": 9502.29,
+  "answers": {
+   "what": {
+    "type": "choice",
+    "choice": "ongoing_outage",
+    "probabilities": {
+     "routine": 0.0545,
+     "planned_change": 0.0428,
+     "recovered_failure": 0.0798,
+     "ongoing_outage": 0.8136,
+     "resource_risk": 0.0094
+    },
+    "confidence": 0.767
+   },
+   "failure": {
+    "type": "noul",
+    "noul": 0.7986
+   },
+   "down": {
+    "type": "noul",
+    "noul": 0.8962
+   }
+  }
+ },
+ {
+  "fixture": "docker_oom_crashloop",
+  "expected": "critical",
+  "latency_ms": 9734.76,
+  "answers": {
+   "what": {
+    "type": "choice",
+    "choice": "recovered_failure",
+    "probabilities": {
+     "routine": 0.0487,
+     "planned_change": 0.0285,
+     "recovered_failure": 0.7069,
+     "ongoing_outage": 0.0548,
+     "resource_risk": 0.1611
+    },
+    "confidence": 0.6336
+   },
+   "failure": {
+    "type": "noul",
+    "noul": 0.703
+   },
+   "down": {
+    "type": "noul",
+    "noul": 0.3244
+   }
+  }
+ },
+ {
+  "fixture": "docker_restart_raw",
+  "expected": "noise/info",
+  "latency_ms": 9704.88,
+  "answers": {
+   "what": {
+    "type": "choice",
+    "choice": "planned_change",
+    "probabilities": {
+     "routine": 0.0933,
+     "planned_change": 0.686,
+     "recovered_failure": 0.1622,
+     "ongoing_outage": 0.0523,
+     "resource_risk": 0.0061
+    },
+    "confidence": 0.6075
+   },
+   "failure": {
+    "type": "noul",
+    "noul": 0.2539
+   },
+   "down": {
+    "type": "noul",
+    "noul": 0.2934
+   }
+  }
+ },
+ {
+  "fixture": "docker_restart_summary",
+  "expected": "noise/info",
+  "latency_ms": 9790.9,
+  "answers": {
+   "what": {
+    "type": "choice",
+    "choice": "recovered_failure",
+    "probabilities": {
+     "routine": 0.106,
+     "planned_change": 0.3834,
+     "recovered_failure": 0.4646,
+     "ongoing_outage": 0.0423,
+     "resource_risk": 0.0036
+    },
+    "confidence": 0.3308
+   },
+   "failure": {
+    "type": "noul",
+    "noul": 0.3189
+   },
+   "down": {
+    "type": "noul",
+    "noul": 0.1192
+   }
+  }
+ },
+ {
+  "fixture": "docker_unhealthy",
+  "expected": "action_needed/critical",
+  "latency_ms": 9249.7,
+  "answers": {
+   "what": {
+    "type": "choice",
+    "choice": "ongoing_outage",
+    "probabilities": {
+     "routine": 0.0232,
+     "planned_change": 0.0107,
+     "recovered_failure": 0.0389,
+     "ongoing_outage": 0.9217,
+     "resource_risk": 0.0055
+    },
+    "confidence": 0.9021
+   },
+   "failure": {
+    "type": "noul",
+    "noul": 0.8212
+   },
+   "down": {
+    "type": "noul",
+    "noul": 0.9047
+   }
+  }
+ }
+]

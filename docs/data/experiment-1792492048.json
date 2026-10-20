@@ -1,0 +1,359 @@
+[
+ {
+  "fixture": "disk_enriched",
+  "expected": "action_needed",
+  "latency_ms": 26157.98,
+  "answers": {
+   "choice": {
+    "type": "choice",
+    "choice": "action_needed",
+    "probabilities": {
+     "noise": 0.0472,
+     "info": 0.1366,
+     "action_needed": 0.6697,
+     "critical": 0.1464
+    },
+    "confidence": 0.5596
+   },
+   "score": {
+    "type": "score",
+    "score": 1.8765,
+    "legend": {
+     "0": "noise",
+     "1": "info",
+     "2": "action_needed",
+     "3": "critical"
+    },
+    "probabilities": {
+     "0": 0.1147,
+     "1": 0.1853,
+     "2": 0.4087,
+     "3": 0.2913
+    },
+    "confidence": 0.4568
+   },
+   "failure": {
+    "type": "noul",
+    "noul": 0.3934
+   },
+   "down": {
+    "type": "noul",
+    "noul": 0.285
+   },
+   "imminent": {
+    "type": "noul",
+    "noul": 0.4843
+   },
+   "human": {
+    "type": "noul",
+    "noul": 0.502
+   }
+  }
+ },
+ {
+  "fixture": "disk_raw",
+  "expected": "action_needed",
+  "latency_ms": 27151.95,
+  "answers": {
+   "choice": {
+    "type": "choice",
+    "choice": "info",
+    "probabilities": {
+     "noise": 0.1835,
+     "info": 0.4614,
+     "action_needed": 0.3096,
+     "critical": 0.0455
+    },
+    "confidence": 0.2819
+   },
+   "score": {
+    "type": "score",
+    "score": 1.6039,
+    "legend": {
+     "0": "noise",
+     "1": "info",
+     "2": "action_needed",
+     "3": "critical"
+    },
+    "probabilities": {
+     "0": 0.1808,
+     "1": 0.2856,
+     "2": 0.2824,
+     "3": 0.2512
+    },
+    "confidence": 0.3799
+   },
+   "failure": {
+    "type": "noul",
+    "noul": 0.179
+   },
+   "down": {
+    "type": "noul",
+    "noul": 0.1227
+   },
+   "imminent": {
+    "type": "noul",
+    "noul": 0.2679
+   },
+   "human": {
+    "type": "noul",
+    "noul": 0.2271
+   }
+  }
+ },
+ {
+  "fixture": "docker_app_down",
+  "expected": "critical",
+  "latency_ms": 26044.38,
+  "answers": {
+   "choice": {
+    "type": "choice",
+    "choice": "critical",
+    "probabilities": {
+     "noise": 0.0826,
+     "info": 0.1397,
+     "action_needed": 0.2213,
+     "critical": 0.5563
+    },
+    "confidence": 0.4084
+   },
+   "score": {
+    "type": "score",
+    "score": 1.7428,
+    "legend": {
+     "0": "noise",
+     "1": "info",
+     "2": "action_needed",
+     "3": "critical"
+    },
+    "probabilities": {
+     "0": 0.1819,
+     "1": 0.1907,
+     "2": 0.3301,
+     "3": 0.2973
+    },
+    "confidence": 0.3615
+   },
+   "failure": {
+    "type": "noul",
+    "noul": 0.7986
+   },
+   "down": {
+    "type": "noul",
+    "noul": 0.8962
+   },
+   "imminent": {
+    "type": "noul",
+    "noul": 0.4168
+   },
+   "human": {
+    "type": "noul",
+    "noul": 0.1552
+   }
+  }
+ },
+ {
+  "fixture": "docker_oom_crashloop",
+  "expected": "critical",
+  "latency_ms": 27005.6,
+  "answers": {
+   "choice": {
+    "type": "choice",
+    "choice": "action_needed",
+    "probabilities": {
+     "noise": 0.1158,
+     "info": 0.1969,
+     "action_needed": 0.4187,
+     "critical": 0.2686
+    },
+    "confidence": 0.2249
+   },
+   "score": {
+    "type": "score",
+    "score": 1.7556,
+    "legend": {
+     "0": "noise",
+     "1": "info",
+     "2": "action_needed",
+     "3": "critical"
+    },
+    "probabilities": {
+     "0": 0.1707,
+     "1": 0.2027,
+     "2": 0.3269,
+     "3": 0.2997
+    },
+    "confidence": 0.3709
+   },
+   "failure": {
+    "type": "noul",
+    "noul": 0.703
+   },
+   "down": {
+    "type": "noul",
+    "noul": 0.3244
+   },
+   "imminent": {
+    "type": "noul",
+    "noul": 0.3894
+   },
+   "human": {
+    "type": "noul",
+    "noul": 0.2449
+   }
+  }
+ },
+ {
+  "fixture": "docker_restart_raw",
+  "expected": "noise/info",
+  "latency_ms": 26000.73,
+  "answers": {
+   "choice": {
+    "type": "choice",
+    "choice": "info",
+    "probabilities": {
+     "noise": 0.3128,
+     "info": 0.4089,
+     "action_needed": 0.1257,
+     "critical": 0.1526
+    },
+    "confidence": 0.2119
+   },
+   "score": {
+    "type": "score",
+    "score": 1.4921,
+    "legend": {
+     "0": "noise",
+     "1": "info",
+     "2": "action_needed",
+     "3": "critical"
+    },
+    "probabilities": {
+     "0": 0.2347,
+     "1": 0.2469,
+     "2": 0.3101,
+     "3": 0.2083
+    },
+    "confidence": 0.3668
+   },
+   "failure": {
+    "type": "noul",
+    "noul": 0.2539
+   },
+   "down": {
+    "type": "noul",
+    "noul": 0.2934
+   },
+   "imminent": {
+    "type": "noul",
+    "noul": 0.3278
+   },
+   "human": {
+    "type": "noul",
+    "noul": 0.1685
+   }
+  }
+ },
+ {
+  "fixture": "docker_restart_summary",
+  "expected": "noise/info",
+  "latency_ms": 28970.0,
+  "answers": {
+   "choice": {
+    "type": "choice",
+    "choice": "info",
+    "probabilities": {
+     "noise": 0.3512,
+     "info": 0.4047,
+     "action_needed": 0.127,
+     "critical": 0.1171
+    },
+    "confidence": 0.2062
+   },
+   "score": {
+    "type": "score",
+    "score": 1.4199,
+    "legend": {
+     "0": "noise",
+     "1": "info",
+     "2": "action_needed",
+     "3": "critical"
+    },
+    "probabilities": {
+     "0": 0.2543,
+     "1": 0.2792,
+     "2": 0.259,
+     "3": 0.2076
+    },
+    "confidence": 0.3545
+   },
+   "failure": {
+    "type": "noul",
+    "noul": 0.3189
+   },
+   "down": {
+    "type": "noul",
+    "noul": 0.1192
+   },
+   "imminent": {
+    "type": "noul",
+    "noul": 0.1789
+   },
+   "human": {
+    "type": "noul",
+    "noul": 0.1702
+   }
+  }
+ },
+ {
+  "fixture": "docker_unhealthy",
+  "expected": "action_needed/critical",
+  "latency_ms": 27012.9,
+  "answers": {
+   "choice": {
+    "type": "choice",
+    "choice": "critical",
+    "probabilities": {
+     "noise": 0.0348,
+     "info": 0.0772,
+     "action_needed": 0.3718,
+     "critical": 0.5162
+    },
+    "confidence": 0.355
+   },
+   "score": {
+    "type": "score",
+    "score": 1.8977,
+    "legend": {
+     "0": "noise",
+     "1": "info",
+     "2": "action_needed",
+     "3": "critical"
+    },
+    "probabilities": {
+     "0": 0.1229,
+     "1": 0.1582,
+     "2": 0.4171,
+     "3": 0.3018
+    },
+    "confidence": 0.4476
+   },
+   "failure": {
+    "type": "noul",
+    "noul": 0.8212
+   },
+   "down": {
+    "type": "noul",
+    "noul": 0.9047
+   },
+   "imminent": {
+    "type": "noul",
+    "noul": 0.5447
+   },
+   "human": {
+    "type": "noul",
+    "noul": 0.3128
+   }
+  }
+ }
+]

@@ -173,3 +173,5 @@ Transient unit fails with `s3.PutObject: Access Denied (403)`. Decider `data_at_
 1. A preamble before `Cause:`. Prompt now says to start with `Cause:` and the code cuts anything before it.
 2. It suggested re-enabling `lifeboat-backup-demo.timer`, which does not exist. Our bug: `systemctl is-active` prints `inactive` for a unit that does not exist, so the event said `timer=inactive`. The collector now checks `LoadState` and reports `timer=none`.
 3. It invented `/etc/lifeboat/demo.env`. The prompt now carries the real lifeboat paths and says not to guess paths.
+
+After the fixes, same demo: `data_at_risk` 0.85 in 3.9 s, Sonnet 4.6 ~5 s, 3,999 + 310 tokens (~$0.018). The reply starts with `Cause:`, names `AWS_PROFILE=homelab-backup-writer` and `/etc/homelab-lifeboat/backup.env`, notices that both demo runs failed with the same 403, rules out host resources, and no longer mentions a timer that does not exist.

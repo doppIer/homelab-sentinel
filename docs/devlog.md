@@ -35,10 +35,16 @@ Hardware: Dell T1700 SFF, Intel i5-4590 (2014, 4 cores, AVX2, no bf16), 16 GB RA
 - Anthropic models on Bedrock needed a use-case form and a one-time AWS Marketplace subscription (temporary `aws-marketplace:Subscribe` on the IAM user, removed afterwards).
 - Memory: int8 dynamic quantization of every Linear outside the LoRA adapters, plus a bf16 embedding table. 7.7 GB -> 4.0 GB, slightly faster, same top answer on 7/7 fixtures, lower confidence (the safer-route rule absorbs it). Deployed as `deploy/strands-decider-int8.service`. The server got about 3.5 GB of RAM back.
 
+## Day 2, evening
+
+- Daily digest: last 24 h of decisions, dropped events left out, outages first, Haiku 4.5 writes a plain-text Telegram report at 21:00 Riga time (systemd timer). A quiet day makes no Bedrock call. First real digest: 937 + 208 tokens.
+- Sentinel runs as `homelab-sentinel.service` (Restart=always, MemoryMax=1G, about 70 MB in practice).
+- Lifeboat backups as a third source, read through `systemctl show` (no restic password, no root): failed run, no success within RPO + 1 h, recovery. `backup_logs` tool reads only lifeboat-backup* journals.
+- Decider put a failed backup in `routine` (0.15): none of the five categories said "nothing is down, but data is unprotected". Added `data_at_risk`; all 10 fixtures now land in the expected category, 4 of 10 go to Bedrock.
+- An unsure recovery (runner-up `data_at_risk`) was sent to Bedrock by the safer-route rule. Hesitation is now capped at notify.
+- First live backup alert: correct diagnosis, but it suggested a timer that does not exist (our collector said `timer=inactive` for a missing unit) and invented a config path. Fixed the collector, grounded the prompt in the real lifeboat paths, and cut any preamble before `Cause:`.
+
 ## Still to do
 
-- Daily digest (Haiku 4.5)
-- Lifeboat backup check as an event source
-- Sentinel itself as a systemd service
 - One day of real traffic: how many events, how many reached Bedrock, cost versus sending everything
 - README, public repo, demo video, Builder Center article

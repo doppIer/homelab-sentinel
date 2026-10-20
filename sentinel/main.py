@@ -22,7 +22,7 @@ def pump(source, inbox):
         inbox.put(event)
 
 
-def record(path, event, result):
+def record(path, event, result, outcome=None):
     row = {
         "ts": event.ts,
         "source": event.source,
@@ -36,6 +36,13 @@ def record(path, event, result):
         "reason": result.reason,
         "latency_ms": round(result.latency_ms, 1),
     }
+    if outcome and outcome.analysis:
+        row.update({
+            "analysis": outcome.analysis,
+            "bedrock_input_tokens": outcome.input_tokens,
+            "bedrock_output_tokens": outcome.output_tokens,
+            "bedrock_seconds": round(outcome.seconds, 1),
+        })
     with open(path, "a") as f:
         f.write(json.dumps(row) + "\n")
 
@@ -44,6 +51,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--no-docker", action="store_true")
     parser.add_argument("--no-netdata", action="store_true")
+    parser.add_argument("--no-bedrock", action="store_true")
     args = parser.parse_args()
 
     load_dotenv()
@@ -68,9 +76,16 @@ def main():
     for source in sources:
         threading.Thread(target=pump, args=(source, inbox), daemon=True).start()
 
+    analyst = None
+    model_id = os.getenv("BEDROCK_ANALYSIS_MODEL")
+    if model_id and not args.no_bedrock:
+        from sentinel.analyst import Analyst, bedrock_model
+
+        analyst = Analyst(triage, bedrock_model(model_id, os.getenv("AWS_REGION", "eu-north-1")), int(os.getenv("MAX_BEDROCK_CALLS_PER_HOUR", "20")))
+
     coalescer = Coalescer(window=float(os.getenv("COALESCE_SECONDS", "15")), summarizers=summarizers)
     telegram = Telegram.from_env()
-    print(f"sentinel up: {len(sources)} sources, telegram={'on' if telegram else 'off'}, decisions -> {log_path}", flush=True)
+    print(f"sentinel up: {len(sources)} sources, telegram={'on' if telegram else 'off'}, bedrock={model_id if analyst else 'off'}, decisions -> {log_path}", flush=True)
 
     while True:
         try:
@@ -78,17 +93,24 @@ def main():
         except queue.Empty:
             pass
         for event in coalescer.ready():
+            outcome = None
             try:
-                result = triage(event.state)
+                if analyst:
+                    outcome = analyst.handle(event.state)
+                    result = outcome.triage
+                else:
+                    result = triage(event.state)
             except Exception as e:
-                print(f"[decider error] {type(e).__name__}: {e} | {event.state}", flush=True)
+                print(f"[sentinel error] {type(e).__name__}: {e} | {event.state}", flush=True)
                 continue
-            record(log_path, event, result)
+            record(log_path, event, result, outcome)
             stamp = time.strftime("%H:%M:%S", time.localtime(event.ts))
             print(f"{stamp} [{ICONS[result.route]:>2}] {result.route:<8} {result.choice:<13} {result.confidence:.2f} {result.latency_ms:>6.0f}ms {event.source}/{event.subject} {event.kind} | {result.reason}", flush=True)
+            if outcome and outcome.analysis:
+                print(f"         bedrock {outcome.seconds:.1f}s in={outcome.input_tokens} out={outcome.output_tokens}\n" + "\n".join("         " + line for line in outcome.analysis.splitlines()), flush=True)
             if telegram:
                 try:
-                    telegram.send_decision(event, result)
+                    telegram.send_decision(event, result, analysis=outcome.analysis if outcome else None)
                 except Exception as e:
                     print(f"[telegram error] {type(e).__name__}: {e}", flush=True)
 

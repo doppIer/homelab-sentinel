@@ -36,6 +36,11 @@ class TelegramTest(unittest.TestCase):
         self.assertTrue(text.startswith("🔴 ESCALATE · homeserver · docker/jellyfin"))
         self.assertIn("Decider: ongoing_outage (0.60) in 3.8s", text)
         self.assertIn("exit_code=137", text)
+        self.assertNotIn("Bedrock", text)
+
+    def test_message_carries_bedrock_analysis(self):
+        text = format_message(self.event, result("escalate", "ongoing_outage"), analysis="Cause: OOM\nFix: raise mem_limit")
+        self.assertTrue(text.endswith("🧠 Bedrock:\nCause: OOM\nFix: raise mem_limit"))
 
 
 if __name__ == "__main__":

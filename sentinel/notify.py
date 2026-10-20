@@ -17,7 +17,7 @@ def api_call(token, method, payload=None):
         return json.load(r)
 
 
-def format_message(event, result, host="homeserver"):
+def format_message(event, result, host="homeserver", analysis=None):
     icon = ICONS.get(result.route, "")
     lines = [
         f"{icon} {result.route.upper()} · {host} · {event.source}/{event.subject}",
@@ -27,6 +27,8 @@ def format_message(event, result, host="homeserver"):
         "",
         event.state[:900],
     ]
+    if analysis:
+        lines += ["", "🧠 Bedrock:", analysis[:1800]]
     return "\n".join(lines)
 
 
@@ -53,13 +55,13 @@ class Telegram:
         self.sent[key] = now
         return True
 
-    def send_decision(self, event, result, now=None):
+    def send_decision(self, event, result, now=None, analysis=None):
         now = time.time() if now is None else now
         if result.route not in ("notify", "escalate"):
             return False
         if result.route == "notify" and not self.allowed((event.source, event.subject, result.route), now):
             return False
-        self.post(format_message(event, result, os.getenv("SENTINEL_HOST", "homeserver")))
+        self.post(format_message(event, result, os.getenv("SENTINEL_HOST", "homeserver"), analysis))
         return True
 
 

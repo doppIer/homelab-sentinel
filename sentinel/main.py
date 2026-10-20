@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 from decision_patterns.log_triage import LogTriage
 from sentinel.coalesce import Coalescer
 from sentinel.collectors.docker_events import DockerEvents
+from sentinel.collectors.lifeboat import LifeboatBackups
 from sentinel.collectors.netdata import NetdataAlarms
 from sentinel.notify import Telegram
 
@@ -52,6 +53,7 @@ def main():
     parser.add_argument("--no-docker", action="store_true")
     parser.add_argument("--no-netdata", action="store_true")
     parser.add_argument("--no-bedrock", action="store_true")
+    parser.add_argument("--no-lifeboat", action="store_true")
     args = parser.parse_args()
 
     load_dotenv()
@@ -71,6 +73,9 @@ def main():
         summarizers["docker"] = docker.summarize
     if not args.no_netdata:
         sources.append(NetdataAlarms(os.getenv("NETDATA_URL", "http://127.0.0.1:19999"), int(os.getenv("NETDATA_INTERVAL", "60"))))
+
+    if not args.no_lifeboat:
+        sources.append(LifeboatBackups(int(os.getenv("LIFEBOAT_INTERVAL", "120"))))
 
     inbox = queue.Queue()
     for source in sources:

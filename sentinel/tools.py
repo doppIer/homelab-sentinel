@@ -95,4 +95,21 @@ def recent_events(minutes: int = 60) -> str:
     return "\n".join(rows[-30:]) or f"nothing in the last {minutes} minutes"
 
 
-ALL_TOOLS = [container_logs, container_status, container_stats, host_resources, recent_events]
+UNIT_NAME = re.compile(r"^lifeboat-backup[A-Za-z0-9@_.-]*$")
+
+
+@tool
+def backup_logs(unit: str, lines: int = 60) -> str:
+    """Recent journal lines of one homelab-lifeboat restic backup unit, for example lifeboat-backup@tier1.service. Secrets are redacted.
+
+    Args:
+        unit: The systemd unit name from the event, starting with lifeboat-backup.
+        lines: How many lines from the end, 10 to 200.
+    """
+    if not UNIT_NAME.match(unit):
+        return f"refused: {unit!r} is not a lifeboat-backup unit"
+    lines = max(10, min(int(lines), 200))
+    return run(["journalctl", "-u", unit, "-n", str(lines), "--no-pager", "-o", "short-iso"])
+
+
+ALL_TOOLS = [container_logs, container_status, container_stats, host_resources, recent_events, backup_logs]

@@ -1,0 +1,18 @@
+[Unit]
+Description=Strands Decider 2B for homelab-sentinel (int8 Linears, bf16 embeddings)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=h4n
+WorkingDirectory=/home/h4n/homelab-sentinel
+Environment=HF_HUB_OFFLINE=1
+ExecStart=/home/h4n/homelab-sentinel/.venv/bin/python /home/h4n/homelab-sentinel/scripts/decider_int8.py 8765 --embed-bf16
+Restart=on-failure
+RestartSec=15
+MemoryMax=9G
+MemorySwapMax=0
+Nice=10
+
+[Install]
+WantedBy=multi-user.target

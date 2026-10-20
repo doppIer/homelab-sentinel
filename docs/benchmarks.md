@@ -124,4 +124,15 @@ Every `nn.Linear` outside the LoRA adapters replaced by a dynamic int8 Linear (f
 | docker_restart_summary | planned_change (0.60) -> digest | planned_change (0.41) -> notify |
 | docker_unhealthy | ongoing_outage (0.90) -> escalate | ongoing_outage (0.77) -> escalate |
 
+### int8 + bf16 embedding table (`--embed-bf16`)
+
+The embedding table is 509M parameters (about 2 GB in fp32). Stored in bf16 with each lookup cast back to fp32: anon 4.02 GB (from 4.97), load peak 7.5 GB (from 9.7), latency 3.1-3.7 s. All seven answers match int8 exactly, to two decimals.
+
+| | fp32 | int8 | int8 + bf16 embeddings |
+|---|---|---|---|
+| Resident memory (anon) | 7.7 GB | 4.97 GB | 4.02 GB |
+| Load peak (cgroup) | ~10 GB | 9.7 GB | 7.5 GB |
+| Warm latency | 3.7-4.4 s | 3.2-3.5 s | 3.1-3.7 s |
+| Same top choice as fp32 | 7/7 | 7/7 | 7/7 |
+
 Finding: int8 keeps every top choice (7/7) and is 15% faster with 2.7 GB less memory, but confidence drops by 0.02-0.33. One route moved, toward caution (digest -> notify), because the low-confidence rule takes the safer of the top two answers. No outage was routed away from Bedrock. The remaining ~5 GB is mostly the fp32 embedding table, which int8 Linear quantization does not touch.

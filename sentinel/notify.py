@@ -35,7 +35,7 @@ class Telegram:
         self.token = token
         self.chat_id = chat_id
         self.cooldown = cooldown
-        self.post = post or (lambda text: api_call(self.token, "sendMessage", {"chat_id": self.chat_id, "text": text}))
+        self.post = post or (lambda text: api_call(self.token, "sendMessage", {"chat_id": self.chat_id, "text": text, "link_preview_options": {"is_disabled": True}}))
         self.sent = {}
 
     @classmethod

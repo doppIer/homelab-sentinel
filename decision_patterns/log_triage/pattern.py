@@ -21,6 +21,8 @@ ROUTES = {
     "ongoing_outage": "escalate",
 }
 
+SEVERITY = ["drop", "digest", "notify", "escalate"]
+
 
 @dataclass
 class Triage:
@@ -34,9 +36,9 @@ class Triage:
 
 
 class LogTriage:
-    def __init__(self, url="http://127.0.0.1:8765", escalate_below=0.5, outage_risk=0.25, timeout=60, question=QUESTION, criteria=CRITERIA, routes=ROUTES):
+    def __init__(self, url="http://127.0.0.1:8765", unsure_below=0.5, outage_risk=0.25, timeout=60, question=QUESTION, criteria=CRITERIA, routes=ROUTES):
         self.url = url.rstrip("/") + "/v1/systemone"
-        self.escalate_below = escalate_below
+        self.unsure_below = unsure_below
         self.outage_risk = outage_risk
         self.timeout = timeout
         self.question = question
@@ -64,10 +66,13 @@ class LogTriage:
         outage = probabilities.get("ongoing_outage", 0)
         if self.routes[choice] == "escalate":
             return "escalate", f"decider saw {choice} at {confidence:.2f}"
-        if confidence < self.escalate_below:
-            return "escalate", f"unsure: {choice} at {confidence:.2f} < {self.escalate_below}"
         if outage >= self.outage_risk:
             return "escalate", f"chose {choice} but P(ongoing_outage)={outage:.2f} >= {self.outage_risk}"
+        if confidence < self.unsure_below:
+            ranked = sorted(probabilities, key=probabilities.get, reverse=True)
+            runner_up = next((c for c in ranked if c != choice), choice)
+            safer = max(self.routes[choice], self.routes[runner_up], key=SEVERITY.index)
+            return safer, f"unsure between {choice} and {runner_up} ({confidence:.2f}), took the safer route"
         return self.routes[choice], f"decider saw {choice} at {confidence:.2f}"
 
     def __call__(self, state):

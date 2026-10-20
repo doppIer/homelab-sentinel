@@ -11,7 +11,7 @@ def main(paths):
     load_dotenv(".env")
     triage = LogTriage(
         os.getenv("DECIDER_URL", "http://127.0.0.1:8765"),
-        escalate_below=float(os.getenv("ESCALATE_BELOW", "0.5")),
+        unsure_below=float(os.getenv("UNSURE_BELOW", "0.5")),
         outage_risk=float(os.getenv("OUTAGE_RISK", "0.25")),
     )
     print(f"{'fixture':<32} {'choice':<18} {'conf':>5} {'route':<9} {'ms':>6}  probabilities")

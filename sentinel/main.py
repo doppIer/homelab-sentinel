@@ -49,7 +49,7 @@ def main():
     load_dotenv()
     triage = LogTriage(
         os.getenv("DECIDER_URL", "http://127.0.0.1:8765"),
-        escalate_below=float(os.getenv("ESCALATE_BELOW", "0.5")),
+        unsure_below=float(os.getenv("UNSURE_BELOW", "0.5")),
         outage_risk=float(os.getenv("OUTAGE_RISK", "0.25")),
     )
     log_path = Path(os.getenv("DECISION_LOG", "logs/decisions.jsonl"))

@@ -85,7 +85,7 @@ class NetdataTest(unittest.TestCase):
 
 class RouteTest(unittest.TestCase):
     def setUp(self):
-        self.triage = LogTriage(escalate_below=0.5, outage_risk=0.25)
+        self.triage = LogTriage(unsure_below=0.5, outage_risk=0.25)
 
     def probs(self, **kw):
         base = {"routine": 0.0, "planned_change": 0.0, "recovered_failure": 0.0, "ongoing_outage": 0.0, "resource_risk": 0.0}
@@ -102,11 +102,19 @@ class RouteTest(unittest.TestCase):
         self.assertEqual(route, "escalate")
         self.assertIn("ongoing_outage", reason)
 
-    def test_unsure_escalates(self):
+    def test_unsure_takes_safer_of_top_two(self):
+        p = self.probs(planned_change=0.55, recovered_failure=0.33, routine=0.08, ongoing_outage=0.04)
+        route, reason = self.triage.route("planned_change", 0.46, p)
+        self.assertEqual(route, "notify")
+        self.assertIn("unsure between planned_change and recovered_failure", reason)
+
+    def test_unsure_between_two_quiet_routes_stays_quiet(self):
+        p = self.probs(routine=0.5, planned_change=0.4, ongoing_outage=0.02)
+        self.assertEqual(self.triage.route("routine", 0.3, p)[0], "digest")
+
+    def test_unsure_never_calls_bedrock_without_outage_risk(self):
         p = self.probs(recovered_failure=0.46, planned_change=0.38, routine=0.11, ongoing_outage=0.04)
-        route, reason = self.triage.route("recovered_failure", 0.33, p)
-        self.assertEqual(route, "escalate")
-        self.assertIn("unsure", reason)
+        self.assertEqual(self.triage.route("recovered_failure", 0.33, p)[0], "notify")
 
     def test_hidden_outage_risk_escalates(self):
         p = self.probs(planned_change=0.66, ongoing_outage=0.30)

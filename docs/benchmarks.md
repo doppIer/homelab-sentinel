@@ -71,3 +71,7 @@ Same `docker restart mympd`, four wordings, question v2.
 | d_minimal | `action=restart outcome=running_again` | recovered_failure | 0.46 | escalate |
 
 Finding: short facts plus one explicit meaning field wins. Too little context (d) flips the answer: a bare "restart" reads like recovery from a crash. Adopted c for clean bursts; crash bursts keep the detailed steps because the evidence matters there (their fixtures are unchanged).
+
+## Live check, day 2
+
+`docker restart mympd` live: `planned_change` at 0.46 (fixture with the same wording: 0.60). The only difference was the image tag `:latest`. With the old rule it escalated to Bedrock. Policy changed: low confidence now takes the safer of the top-two routes (here `notify`), and Bedrock is reserved for `ongoing_outage` or P(ongoing_outage) >= 0.25.

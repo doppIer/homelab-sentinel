@@ -75,3 +75,16 @@ Finding: short facts plus one explicit meaning field wins. Too little context (d
 ## Live check, day 2
 
 `docker restart mympd` live: `planned_change` at 0.46 (fixture with the same wording: 0.60). The only difference was the image tag `:latest`. With the old rule it escalated to Bedrock. Policy changed: low confidence now takes the safer of the top-two routes (here `notify`), and Bedrock is reserved for `ongoing_outage` or P(ongoing_outage) >= 0.25.
+
+## First live escalation, day 2 (`scripts/demo.sh crash`)
+
+A throwaway container prints `FATAL: could not connect to database at db:5432` and exits 1.
+
+| Step | Result | Time | Cost |
+|---|---|---|---|
+| Collector | `steps=start>die(exit 1) outcome=down crash_reason=application error` | 15 s coalesce window | 0 |
+| Decider (gate) | `ongoing_outage` 0.83, escalate | 3.9 s | 0 (local) |
+| Sonnet 4.6 agent (container_status, container_logs) | correct cause, quoted the FATAL line, noticed `restart_policy=no`, suggested commands only | ~4.8 s (8.7 s total incl. gate) | 2,568 in + 317 out tokens ≈ $0.014 |
+
+Price used: eu.anthropic.claude-sonnet-4-6 on Bedrock, $3.30 / M input, $16.50 / M output.
+Events that did not escalate today (restarts, planned changes) cost 0 Bedrock calls: the gate Denies them before any model call.

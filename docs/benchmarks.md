@@ -58,3 +58,16 @@ Findings:
 | docker_unhealthy | ongoing_outage | ongoing_outage (0.90) | 0.82 | 0.90 |
 
 Finding: the factual choice is confident (0.61-0.96) where the severity choice was not (0.21-0.56). The one miss was caused by our own summary using Docker's words `kill` and `die` for a clean restart; the collector now uses plain words for clean stops. Adopted: single factual question per event.
+
+## How to describe a clean restart (`python -m sentinel.bench tests/fixtures/restart_variants/*.json`)
+
+Same `docker restart mympd`, four wordings, question v2.
+
+| Variant | State (after container/image) | Choice | Conf | Route |
+|---|---|---|---|---|
+| a_current | `steps=stop_requested(15)>exited_cleanly>stopped>started>restart_command outcome=running_again meaning=... exit_codes=143 graceful_stop=yes ...` | planned_change | 0.33 | escalate |
+| b_compact | `action=restart stop=clean outcome=running_again starts_last_hour=1 ...` | planned_change | 0.41 | escalate |
+| c_compact_meaning | b + `meaning=restarted on request` | planned_change | 0.60 | digest |
+| d_minimal | `action=restart outcome=running_again` | recovered_failure | 0.46 | escalate |
+
+Finding: short facts plus one explicit meaning field wins. Too little context (d) flips the answer: a bare "restart" reads like recovery from a crash. Adopted c for clean bursts; crash bursts keep the detailed steps because the evidence matters there (their fixtures are unchanged).

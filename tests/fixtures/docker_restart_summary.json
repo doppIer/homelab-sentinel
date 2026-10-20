@@ -1,5 +1,5 @@
 {
- "state": "source=docker container=mympd image=ghcr.io/jcorporation/mympd/mympd steps=stop_requested(15)>exited_cleanly>stopped>started>restart_command outcome=running_again meaning=stopped cleanly on request and started again exit_codes=143 graceful_stop=yes starts_last_hour=1 compose_project=mympd",
+ "state": "source=docker container=mympd image=ghcr.io/jcorporation/mympd/mympd action=restart stop=clean outcome=running_again starts_last_hour=1 compose_project=mympd meaning=restarted on request",
  "questions": {
   "what": {
    "type": "choice",

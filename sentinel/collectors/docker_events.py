@@ -125,28 +125,48 @@ class DockerEvents:
 
         restarts = len([t for t in self.history[(first.subject, "start")] if last.ts - t <= self.window])
 
-        parts = [
-            "source=docker",
-            f"container={first.subject}",
-            f"image={attrs.get('image', '?')}",
-            f"steps={'>'.join(step_label(e, graceful) for e in events)}",
-            f"outcome={outcome}",
-        ]
-        if graceful and outcome == "running_again":
-            parts.append("meaning=stopped cleanly on request and started again")
-        if exit_codes:
-            parts.append(f"exit_codes={','.join(exit_codes)}")
-            parts.append(f"graceful_stop={'no' if crashed else 'yes'}")
-        if crashed:
-            parts.append(f"crash_reason={'; '.join(EXIT_CODES.get(c, 'unknown code ' + c) for c in crashed)}")
-        if "oom" in kinds:
-            parts.append("out_of_memory=yes")
-        if "health_status:unhealthy" in kinds:
-            parts.append("healthcheck_failed=yes")
+        if graceful:
+            if set(kinds) == {"health_status:healthy"}:
+                action, meaning = "healthcheck", "healthcheck passed"
+            elif "restart" in kinds or (outcome == "running_again"):
+                action, meaning = "restart", "restarted on request"
+            elif outcome == "down":
+                action, meaning = "stop", "stopped on request"
+            else:
+                action, meaning = "start", "started"
+            parts = [
+                "source=docker",
+                f"container={first.subject}",
+                f"image={attrs.get('image', '?')}",
+                f"action={action}",
+                "stop=clean" if action in ("restart", "stop") else "",
+                f"outcome={outcome}",
+            ]
+            parts = [p for p in parts if p]
+        else:
+            meaning = None
+            parts = [
+                "source=docker",
+                f"container={first.subject}",
+                f"image={attrs.get('image', '?')}",
+                f"steps={'>'.join(step_label(e, False) for e in events)}",
+                f"outcome={outcome}",
+            ]
+            if exit_codes:
+                parts.append(f"exit_codes={','.join(exit_codes)}")
+                parts.append("graceful_stop=no")
+            if crashed:
+                parts.append(f"crash_reason={'; '.join(EXIT_CODES.get(c, 'unknown code ' + c) for c in crashed)}")
+            if "oom" in kinds:
+                parts.append("out_of_memory=yes")
+            if "health_status:unhealthy" in kinds:
+                parts.append("healthcheck_failed=yes")
         parts.append(f"starts_last_hour={restarts}")
         project = attrs.get("com.docker.compose.project")
         if project:
             parts.append(f"compose_project={project}")
+        if meaning:
+            parts.append(f"meaning={meaning}")
 
         return Event(
             source="docker",

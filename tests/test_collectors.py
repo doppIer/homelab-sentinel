@@ -138,14 +138,10 @@ class DockerSummaryTest(unittest.TestCase):
     def test_planned_restart_is_graceful_and_running(self):
         steps = [("kill", {"signal": "15"}), ("die", {"exitCode": "143"}), ("stop", {}), ("start", {}), ("restart", {})]
         event = self.burst(DockerEvents(), steps)
-        self.assertIn("steps=stop_requested(15)>exited_cleanly>stopped>started>restart_command", event.state)
-        self.assertIn("meaning=stopped cleanly on request and started again", event.state)
-        self.assertNotIn("die", event.state)
-        self.assertNotIn("kill", event.state)
-        self.assertIn("outcome=running_again", event.state)
-        self.assertIn("graceful_stop=yes", event.state)
-        self.assertIn("starts_last_hour=1", event.state)
-        self.assertNotIn("crash_reason", event.state)
+        self.assertIn("action=restart stop=clean outcome=running_again starts_last_hour=1", event.state)
+        self.assertTrue(event.state.endswith("meaning=restarted on request"))
+        for word in ("die", "kill", "steps=", "exit_codes", "crash_reason"):
+            self.assertNotIn(word, event.state)
         self.assertEqual(event.kind, "kill..restart")
 
     def test_oom_crash_loop(self):
@@ -165,6 +161,16 @@ class DockerSummaryTest(unittest.TestCase):
         event = self.burst(DockerEvents(), steps)
         self.assertIn("steps=kill(signal 9)>die(exit 137)>start", event.state)
         self.assertNotIn("meaning=", event.state)
+
+    def test_clean_stop(self):
+        event = self.burst(DockerEvents(), [("kill", {"signal": "15"}), ("die", {"exitCode": "0"}), ("stop", {})], name="opengym-web-1")
+        self.assertIn("action=stop stop=clean outcome=down", event.state)
+        self.assertIn("meaning=stopped on request", event.state)
+
+    def test_healthcheck_passed(self):
+        event = self.burst(DockerEvents(), [("health_status: healthy", {})], name="jellyfin")
+        self.assertIn("action=healthcheck outcome=running", event.state)
+        self.assertNotIn("stop=clean", event.state)
 
     def test_container_left_down(self):
         event = self.burst(DockerEvents(), [("die", {"exitCode": "1"})], name="opengym-api-1")

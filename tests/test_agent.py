@@ -115,6 +115,23 @@ class AnalystTest(unittest.TestCase):
         self.assertIn("decider unavailable", out.triage.reason)
 
 
+class FailingModel(ScriptedModel):
+    async def stream(self, *a, **k):
+        self.calls += 1
+        raise RuntimeError("Model use case details have not been submitted")
+        yield
+
+
+class BedrockFailureTest(unittest.TestCase):
+    def test_outage_alert_survives_a_bedrock_failure(self):
+        model = FailingModel()
+        out = analyst("escalate", model).handle("source=docker container=x outcome=down")
+        self.assertEqual(out.triage.route, "escalate")
+        self.assertEqual(out.triage.choice, "ongoing_outage")
+        self.assertIn("Bedrock analysis failed", out.analysis)
+        self.assertIn("use case details", out.analysis)
+
+
 class BudgetTest(unittest.TestCase):
     def test_budget_blocks_after_limit_and_recovers(self):
         clock = FakeClock()

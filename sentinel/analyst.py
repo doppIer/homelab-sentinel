@@ -48,7 +48,12 @@ class Analyst:
 
     def handle(self, state):
         started = time.perf_counter()
-        result = self.agent()(state)
+        try:
+            result = self.agent()(state)
+        except Exception as e:
+            triage = self.gate.last or Triage("unknown", 0.0, {}, "escalate", "decider unavailable", 0.0)
+            note = f"Bedrock analysis failed ({type(e).__name__}): {str(e)[:300]}"
+            return Outcome(triage, note if triage.route == "escalate" else None, 0, 0, time.perf_counter() - started)
         seconds = time.perf_counter() - started
         triage = self.gate.last or Triage("unknown", 0.0, {}, "escalate", "decider unavailable, sent to Bedrock", 0.0)
         usage = result.metrics.accumulated_usage

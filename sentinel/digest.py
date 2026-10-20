@@ -77,7 +77,7 @@ def prompt(rows, s, hours):
 def footer(s, model_id):
     return (
         f"\n\n— {s['events']} events, {s['routes']['escalate']} sent to Bedrock for analysis, "
-        f"{s['routes']['drop'] + s['routes']['digest']} handled locally by Decider. "
+        f"{s['events'] - s['routes']['escalate']} handled locally by Decider. "
         f"Summary by {model_id.split('.')[-1].split('-v')[0]}."
     )
 

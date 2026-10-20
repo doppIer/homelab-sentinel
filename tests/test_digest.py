@@ -58,13 +58,13 @@ class DigestTest(unittest.TestCase):
 
     def test_busy_day_calls_the_summary_model_once(self):
         fake = FakeBedrock()
-        rows = [row(1, "digest"), row(2, "escalate", "ongoing_outage", subject="api"), row(3, "drop", "routine")]
+        rows = [row(1, "digest"), row(2, "escalate", "ongoing_outage", subject="api"), row(3, "drop", "routine"), row(4, "notify", "recovered_failure")]
         text, tokens_in, tokens_out = build(rows, 24, "eu.anthropic.claude-haiku-4-5-20251001-v1:0", "eu-north-1", fake)
         self.assertEqual(len(fake.calls), 1)
         self.assertEqual(fake.calls[0]["modelId"], "eu.anthropic.claude-haiku-4-5-20251001-v1:0")
         self.assertIn("escalate=1", fake.calls[0]["messages"][0]["content"][0]["text"])
         self.assertTrue(text.startswith("🌙 Daily digest\n\nBumpy day"))
-        self.assertIn("3 events, 1 sent to Bedrock for analysis, 2 handled locally by Decider", text)
+        self.assertIn("4 events, 1 sent to Bedrock for analysis, 3 handled locally by Decider", text)
         self.assertIn("claude-haiku-4-5-20251001", text)
         self.assertEqual((tokens_in, tokens_out), (900, 60))
 

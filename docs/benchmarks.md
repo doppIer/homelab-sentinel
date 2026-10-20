@@ -88,3 +88,6 @@ A throwaway container prints `FATAL: could not connect to database at db:5432` a
 
 Price used: eu.anthropic.claude-sonnet-4-6 on Bedrock, $3.30 / M input, $16.50 / M output.
 Events that did not escalate today (restarts, planned changes) cost 0 Bedrock calls: the gate Denies them before any model call.
+## Model choice
+
+Tried to move analysis to Claude Haiku 4.5 (about 3x cheaper per token). The account could not complete the AWS Marketplace subscription for Haiku 4.5, even with `aws-marketplace:Subscribe` granted. Stayed on Sonnet 4.6 for analysis and the daily digest. With the Decider gate in front, only outages reach Bedrock, so the model price is not the cost driver: about $0.014 per analysis with Sonnet versus about $0.005 with Haiku.

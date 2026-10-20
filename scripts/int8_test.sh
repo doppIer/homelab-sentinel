@@ -7,7 +7,7 @@ case "${1:-}" in
     sudo systemd-run --unit=decider-int8 --uid="$(id -u)" --gid="$(id -g)" \
       -p WorkingDirectory="$PWD" -p MemoryMax=10G -p MemorySwapMax=0 -p Nice=10 \
       -E HF_HUB_OFFLINE=1 -E HOME="$HOME" \
-      "$PWD/.venv/bin/python" "$PWD/scripts/decider_int8.py" 8766
+      "$PWD/.venv/bin/python" "$PWD/scripts/decider_int8.py" 8766 "${@:2}"
     echo "started; follow with: journalctl -u decider-int8 -f"
     ;;
   mem)
@@ -20,6 +20,6 @@ case "${1:-}" in
     echo "int8 stopped, fp32 decider started again"
     ;;
   *)
-    echo "usage: scripts/int8_test.sh start|mem|stop"
+    echo "usage: scripts/int8_test.sh start [--embed-bf16]|mem|stop"
     ;;
 esac

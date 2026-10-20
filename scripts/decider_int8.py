@@ -12,6 +12,7 @@ from torch.ao.quantization import default_dynamic_qconfig
 from strands_decider import infer
 
 MODEL = "StrandsAgents/strands-decider-2B-qwen3.5-v1-2610"
+EMBED_BF16 = "--embed-bf16" in sys.argv
 
 
 def rss_gb():
@@ -33,20 +34,36 @@ def quantize_linears(root):
     return len(targets)
 
 
+def to_float(module, inputs, output):
+    return output.float()
+
+
+def shrink_embeddings(root):
+    total = 0
+    for module in root.modules():
+        if isinstance(module, nn.Embedding):
+            module.to(torch.bfloat16)
+            module.register_forward_hook(to_float)
+            total += module.weight.numel()
+    return total
+
+
 def int8_torso(self):
     torso = self.model.torso
     started = time.perf_counter()
     with torch.inference_mode():
         count = quantize_linears(torso)
         torso.float()
-    print(f"[int8] quantized {count} Linear layers in {time.perf_counter() - started:.1f}s, peak rss {rss_gb():.2f} GB", flush=True)
+        embedded = shrink_embeddings(torso) if EMBED_BF16 else 0
+    print(f"[int8] quantized {count} Linear layers, embeddings bf16={EMBED_BF16} ({embedded / 1e6:.0f}M params), {time.perf_counter() - started:.1f}s, peak rss {rss_gb():.2f} GB", flush=True)
 
 
 def main():
     torch.backends.quantized.engine = "fbgemm" if "fbgemm" in torch.backends.quantized.supported_engines else "qnnpack"
     infer.SystemOneEngine._upcast_torso_for_cpu = int8_torso
-    port = sys.argv[1] if len(sys.argv) > 1 else "8766"
-    sys.argv = ["strands-decider", "serve", MODEL, "--device", "cpu", "--port", port, "--model-name", "strands-decider-2B-int8"]
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    port = args[0] if args else "8766"
+    sys.argv = ["strands-decider", "serve", MODEL, "--device", "cpu", "--port", port, "--model-name", "strands-decider-2B-int8" + ("-embbf16" if EMBED_BF16 else "")]
     cli = next(e for e in entry_points(group="console_scripts") if e.name == "strands-decider").load()
     print(f"[int8] engine={torch.backends.quantized.engine} torch={torch.__version__} port={port}", flush=True)
     cli()

@@ -104,3 +104,24 @@ Prices: eu cross-region, Haiku 4.5 $1.10 / $5.50, Sonnet 4.6 $3.30 / $16.50 per 
 Decision: Sonnet 4.6 for outage analysis, because the operator copies the fix commands and a command that fails at 3 a.m. costs more than one cent. Haiku 4.5 for the daily digest, which only summarizes and suggests nothing to run. The Decider gate is what keeps cost low: only outages reach the analysis model.
 
 Side note: in both runs Netdata raised its own `mem.oom_kill` alarm for the OOM demo, which Decider classified as `resource_risk` (0.84, notify). Two independent collectors saw the same incident.
+
+## int8 dynamic quantization vs fp32 (`scripts/int8_test.sh`, then `python -m sentinel.bench` against :8766)
+
+Every `nn.Linear` outside the LoRA adapters replaced by a dynamic int8 Linear (fbgemm), one layer at a time. Embeddings, norms and LoRA stay fp32.
+
+| | fp32 (default) | int8 |
+|---|---|---|
+| Resident memory (anon) | 7.7 GB | 4.97 GB |
+| Warm latency | 3.7-4.4 s | 3.2-3.5 s |
+
+| Fixture | fp32 choice (conf) -> route | int8 choice (conf) -> route |
+|---|---|---|
+| disk_enriched | resource_risk (0.96) -> notify | resource_risk (0.94) -> notify |
+| disk_raw | resource_risk (0.82) -> notify | resource_risk (0.76) -> notify |
+| docker_app_down | ongoing_outage (0.77) -> escalate | ongoing_outage (0.73) -> escalate |
+| docker_oom_crashloop | recovered_failure (0.63) -> notify | recovered_failure (0.30) -> notify |
+| docker_restart_raw | planned_change (0.61) -> digest | planned_change (0.52) -> digest |
+| docker_restart_summary | planned_change (0.60) -> digest | planned_change (0.41) -> notify |
+| docker_unhealthy | ongoing_outage (0.90) -> escalate | ongoing_outage (0.77) -> escalate |
+
+Finding: int8 keeps every top choice (7/7) and is 15% faster with 2.7 GB less memory, but confidence drops by 0.02-0.33. One route moved, toward caution (digest -> notify), because the low-confidence rule takes the safer of the top two answers. No outage was routed away from Bedrock. The remaining ~5 GB is mostly the fp32 embedding table, which int8 Linear quantization does not touch.

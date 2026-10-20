@@ -5,7 +5,7 @@ from sentinel.events import Event
 from sentinel.notify import Telegram, format_message
 
 
-def result(route, choice="action_needed"):
+def result(route, choice="recovered_failure"):
     return Triage(choice, 0.6, {}, route, "because", 3800.0)
 
 
@@ -28,13 +28,13 @@ class TelegramTest(unittest.TestCase):
 
     def test_escalate_is_never_suppressed(self):
         for t in (0, 1, 2):
-            self.assertTrue(self.bot.send_decision(self.event, result("escalate", "critical"), now=t))
+            self.assertTrue(self.bot.send_decision(self.event, result("escalate", "ongoing_outage"), now=t))
         self.assertEqual(len(self.outbox), 3)
 
     def test_message_format(self):
-        text = format_message(self.event, result("escalate", "critical"))
+        text = format_message(self.event, result("escalate", "ongoing_outage"))
         self.assertTrue(text.startswith("🔴 ESCALATE · homeserver · docker/jellyfin"))
-        self.assertIn("Decider: critical (0.60) in 3.8s", text)
+        self.assertIn("Decider: ongoing_outage (0.60) in 3.8s", text)
         self.assertIn("exit_code=137", text)
 
 

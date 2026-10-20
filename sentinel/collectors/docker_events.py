@@ -25,8 +25,25 @@ UP_KINDS = {"start", "restart", "health_status:healthy"}
 DOWN_KINDS = {"die", "stop", "kill", "oom", "health_status:unhealthy"}
 
 
-def step_label(event):
+SOFT_SIGNALS = {"15", "SIGTERM", "2", "SIGINT"}
+
+PLAIN_WORDS = {
+    "kill": "stop_requested",
+    "die": "exited",
+    "stop": "stopped",
+    "start": "started",
+    "restart": "restart_command",
+}
+
+
+def step_label(event, graceful):
     attrs = event.raw.get("Actor", {}).get("Attributes", {})
+    if graceful:
+        if event.kind == "kill":
+            return f"stop_requested({attrs.get('signal', '?')})"
+        if event.kind == "die":
+            return "exited_cleanly"
+        return PLAIN_WORDS.get(event.kind, event.kind)
     if event.kind == "die" and "exitCode" in attrs:
         return f"die(exit {attrs['exitCode']})"
     if event.kind == "kill" and "signal" in attrs:
@@ -95,6 +112,9 @@ class DockerEvents:
         exit_codes = [e.raw.get("Actor", {}).get("Attributes", {}).get("exitCode") for e in events if e.kind == "die"]
         exit_codes = [c for c in exit_codes if c is not None]
         crashed = [c for c in exit_codes if c not in GRACEFUL_EXIT]
+        signals = [e.raw.get("Actor", {}).get("Attributes", {}).get("signal") for e in events if e.kind == "kill"]
+        hard_kill = [x for x in signals if x is not None and x not in SOFT_SIGNALS]
+        graceful = not crashed and not hard_kill and "oom" not in kinds and "health_status:unhealthy" not in kinds
 
         if last.kind in UP_KINDS:
             outcome = "running_again" if any(k in DOWN_KINDS for k in kinds) else "running"
@@ -109,9 +129,11 @@ class DockerEvents:
             "source=docker",
             f"container={first.subject}",
             f"image={attrs.get('image', '?')}",
-            f"steps={'>'.join(step_label(e) for e in events)}",
+            f"steps={'>'.join(step_label(e, graceful) for e in events)}",
             f"outcome={outcome}",
         ]
+        if graceful and outcome == "running_again":
+            parts.append("meaning=stopped cleanly on request and started again")
         if exit_codes:
             parts.append(f"exit_codes={','.join(exit_codes)}")
             parts.append(f"graceful_stop={'no' if crashed else 'yes'}")

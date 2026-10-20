@@ -1,14 +1,15 @@
 {
- "state": "source=docker container=mympd image=ghcr.io/jcorporation/mympd/mympd steps=kill(signal 15)>die(exit 143)>stop>start>restart outcome=running_again exit_codes=143 graceful_stop=yes starts_last_hour=1 compose_project=mympd",
+ "state": "source=docker container=mympd image=ghcr.io/jcorporation/mympd/mympd steps=stop_requested(15)>exited_cleanly>stopped>started>restart_command outcome=running_again meaning=stopped cleanly on request and started again exit_codes=143 graceful_stop=yes starts_last_hour=1 compose_project=mympd",
  "questions": {
-  "severity": {
+  "what": {
    "type": "choice",
-   "instructions": "How should a homelab operator treat this event?",
+   "instructions": "What happened on this server?",
    "criteria": {
-    "noise": "routine log line, nothing to do",
-    "info": "worth a line in the daily summary, no action",
-    "action_needed": "operator should fix it within a day",
-    "critical": "service down, data at risk, or failure within hours"
+    "routine": "normal background activity, nothing changed",
+    "planned_change": "an operator or an update intentionally restarted, stopped or changed something",
+    "recovered_failure": "something crashed or failed but is running again",
+    "ongoing_outage": "a service is down or unhealthy right now",
+    "resource_risk": "disk, memory or CPU is running out or trending toward failure"
    }
   }
  }

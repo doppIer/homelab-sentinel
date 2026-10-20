@@ -85,39 +85,47 @@ class NetdataTest(unittest.TestCase):
 
 class RouteTest(unittest.TestCase):
     def setUp(self):
-        self.triage = LogTriage(escalate_below=0.5, risk_mass=0.35)
+        self.triage = LogTriage(escalate_below=0.5, outage_risk=0.25)
 
-    def test_raw_disk_case_from_day_one_escalates(self):
-        probs = {"noise": 0.1835, "info": 0.4614, "action_needed": 0.3096, "critical": 0.0455}
-        route, reason = self.triage.route("info", 0.2819, probs)
+    def probs(self, **kw):
+        base = {"routine": 0.0, "planned_change": 0.0, "recovered_failure": 0.0, "ongoing_outage": 0.0, "resource_risk": 0.0}
+        base.update(kw)
+        return base
+
+    def test_disk_from_day_two_notifies(self):
+        p = self.probs(resource_risk=0.97, routine=0.02, ongoing_outage=0.01)
+        self.assertEqual(self.triage.route("resource_risk", 0.96, p)[0], "notify")
+
+    def test_outage_always_escalates(self):
+        p = self.probs(ongoing_outage=0.81, recovered_failure=0.08)
+        route, reason = self.triage.route("ongoing_outage", 0.77, p)
         self.assertEqual(route, "escalate")
-        self.assertIn("low confidence", reason)
+        self.assertIn("ongoing_outage", reason)
 
-    def test_confident_info_with_hidden_risk_escalates(self):
-        probs = {"noise": 0.05, "info": 0.55, "action_needed": 0.30, "critical": 0.10}
-        route, reason = self.triage.route("info", 0.6, probs)
+    def test_unsure_escalates(self):
+        p = self.probs(recovered_failure=0.46, planned_change=0.38, routine=0.11, ongoing_outage=0.04)
+        route, reason = self.triage.route("recovered_failure", 0.33, p)
         self.assertEqual(route, "escalate")
-        self.assertIn("risk mass", reason)
+        self.assertIn("unsure", reason)
 
-    def test_confident_noise_is_dropped(self):
-        probs = {"noise": 0.9, "info": 0.08, "action_needed": 0.01, "critical": 0.01}
-        self.assertEqual(self.triage.route("noise", 0.86, probs)[0], "drop")
+    def test_hidden_outage_risk_escalates(self):
+        p = self.probs(planned_change=0.66, ongoing_outage=0.30)
+        route, reason = self.triage.route("planned_change", 0.6, p)
+        self.assertEqual(route, "escalate")
+        self.assertIn("P(ongoing_outage)", reason)
 
-    def test_confident_action_needed_notifies(self):
-        probs = {"noise": 0.01, "info": 0.1, "action_needed": 0.8, "critical": 0.09}
-        self.assertEqual(self.triage.route("action_needed", 0.73, probs)[0], "notify")
+    def test_confident_planned_change_goes_to_digest(self):
+        p = self.probs(planned_change=0.80, recovered_failure=0.12, ongoing_outage=0.03)
+        self.assertEqual(self.triage.route("planned_change", 0.75, p)[0], "digest")
 
-    def test_critical_always_escalates(self):
-        probs = {"noise": 0.0, "info": 0.0, "action_needed": 0.1, "critical": 0.9}
-        self.assertEqual(self.triage.route("critical", 0.95, probs)[0], "escalate")
+    def test_routine_is_dropped(self):
+        p = self.probs(routine=0.9, planned_change=0.08)
+        self.assertEqual(self.triage.route("routine", 0.88, p)[0], "drop")
 
     def test_payload_uses_criteria_dict(self):
         payload = self.triage.payload("x")
-        self.assertIsInstance(payload["questions"]["severity"]["criteria"], dict)
-
-
-if __name__ == "__main__":
-    unittest.main()
+        self.assertIsInstance(payload["questions"]["what"]["criteria"], dict)
+        self.assertEqual(len(payload["questions"]), 1)
 
 
 class DockerSummaryTest(unittest.TestCase):
@@ -130,7 +138,10 @@ class DockerSummaryTest(unittest.TestCase):
     def test_planned_restart_is_graceful_and_running(self):
         steps = [("kill", {"signal": "15"}), ("die", {"exitCode": "143"}), ("stop", {}), ("start", {}), ("restart", {})]
         event = self.burst(DockerEvents(), steps)
-        self.assertIn("steps=kill(signal 15)>die(exit 143)>stop>start>restart", event.state)
+        self.assertIn("steps=stop_requested(15)>exited_cleanly>stopped>started>restart_command", event.state)
+        self.assertIn("meaning=stopped cleanly on request and started again", event.state)
+        self.assertNotIn("die", event.state)
+        self.assertNotIn("kill", event.state)
         self.assertIn("outcome=running_again", event.state)
         self.assertIn("graceful_stop=yes", event.state)
         self.assertIn("starts_last_hour=1", event.state)
@@ -146,6 +157,14 @@ class DockerSummaryTest(unittest.TestCase):
         self.assertIn("crash_reason=SIGKILL, often out of memory or docker kill", event.state)
         self.assertIn("out_of_memory=yes", event.state)
         self.assertIn("starts_last_hour=4", event.state)
+        self.assertIn("steps=oom>die(exit 137)>start", event.state)
+        self.assertNotIn("meaning=", event.state)
+
+    def test_sigkill_is_not_graceful(self):
+        steps = [("kill", {"signal": "9"}), ("die", {"exitCode": "137"}), ("start", {})]
+        event = self.burst(DockerEvents(), steps)
+        self.assertIn("steps=kill(signal 9)>die(exit 137)>start", event.state)
+        self.assertNotIn("meaning=", event.state)
 
     def test_container_left_down(self):
         event = self.burst(DockerEvents(), [("die", {"exitCode": "1"})], name="opengym-api-1")

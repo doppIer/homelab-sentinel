@@ -50,7 +50,7 @@ def main():
     triage = LogTriage(
         os.getenv("DECIDER_URL", "http://127.0.0.1:8765"),
         escalate_below=float(os.getenv("ESCALATE_BELOW", "0.5")),
-        risk_mass=float(os.getenv("RISK_MASS", "0.35")),
+        outage_risk=float(os.getenv("OUTAGE_RISK", "0.25")),
     )
     log_path = Path(os.getenv("DECISION_LOG", "logs/decisions.jsonl"))
     log_path.parent.mkdir(parents=True, exist_ok=True)

@@ -42,3 +42,19 @@ Findings:
 2. The ordinal score compresses everything into 1.4-1.9.
 3. The 4-way severity choice points the right way but never gets confident, so every event escalated.
 4. On CPU each extra question costs about as much as the first one, so ask few.
+
+## Question design experiment v2 (`python -m sentinel.experiment --v2 tests/fixtures/*.json`)
+
+3 questions per request: factual choice "What happened on this server?" plus failure/down yes/no. ~9.5 s per request.
+
+| Fixture | Expected | what happened (conf) | failure | down |
+|---|---|---|---|---|
+| disk_enriched | resource_risk | resource_risk (0.96) | 0.39 | 0.28 |
+| disk_raw | resource_risk | resource_risk (0.82) | 0.18 | 0.12 |
+| docker_app_down | ongoing_outage | ongoing_outage (0.77) | 0.80 | 0.90 |
+| docker_oom_crashloop | recovered_failure | recovered_failure (0.63) | 0.70 | 0.32 |
+| docker_restart_raw | planned_change | planned_change (0.61) | 0.25 | 0.29 |
+| docker_restart_summary (kill/die words) | planned_change | recovered_failure (0.33) | 0.32 | 0.12 |
+| docker_unhealthy | ongoing_outage | ongoing_outage (0.90) | 0.82 | 0.90 |
+
+Finding: the factual choice is confident (0.61-0.96) where the severity choice was not (0.21-0.56). The one miss was caused by our own summary using Docker's words `kill` and `die` for a clean restart; the collector now uses plain words for clean stops. Adopted: single factual question per event.

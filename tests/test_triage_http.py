@@ -14,10 +14,10 @@ class FakeDecider(BaseHTTPRequestHandler):
         SEEN.append(body)
         reply = {
             "answers": {
-                "severity": {
+                "what": {
                     "type": "choice",
-                    "choice": "action_needed",
-                    "probabilities": {"noise": 0.02, "info": 0.1, "action_needed": 0.8, "critical": 0.08},
+                    "choice": "recovered_failure",
+                    "probabilities": {"routine": 0.02, "planned_change": 0.05, "recovered_failure": 0.85, "ongoing_outage": 0.05, "resource_risk": 0.03},
                     "confidence": 0.73,
                 }
             },
@@ -44,10 +44,10 @@ class TriageHttpTest(unittest.TestCase):
         finally:
             server.shutdown()
             server.server_close()
-        self.assertEqual(result.choice, "action_needed")
+        self.assertEqual(result.choice, "recovered_failure")
         self.assertEqual(result.route, "notify")
         self.assertEqual(result.latency_ms, 3800.0)
-        self.assertEqual(SEEN[0]["questions"]["severity"]["type"], "choice")
+        self.assertEqual(SEEN[0]["questions"]["what"]["type"], "choice")
 
 
 if __name__ == "__main__":

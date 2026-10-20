@@ -61,8 +61,11 @@ class LifeboatBackups:
 
     def timer_state(self, unit):
         tier = tier_of(unit)
-        state = self.shell(["systemctl", "is-active", f"lifeboat-backup-{tier}.timer"]).strip()
-        return state if state in ("active", "inactive", "failed") else "none"
+        out = self.shell(["systemctl", "show", f"lifeboat-backup-{tier}.timer", "--property=LoadState", "--property=ActiveState"])
+        info = dict(line.partition("=")[::2] for line in out.splitlines() if "=" in line)
+        if info.get("LoadState") != "loaded":
+            return "none"
+        return info.get("ActiveState", "unknown")
 
     def status(self, unit, info, now):
         if info.get("LoadState") == "not-found" and not parse_ts(info.get("ExecMainExitTimestamp")):

@@ -151,6 +151,15 @@ class BudgetTest(unittest.TestCase):
         self.assertIn("budget", out.analysis)
 
 
+class FromCauseTest(unittest.TestCase):
+    def test_preamble_is_cut(self):
+        from sentinel.analyst import from_cause
+
+        self.assertEqual(from_cause("Host is healthy. Here is the summary:\n\nCause: x\nFix: y"), "Cause: x\nFix: y")
+        self.assertEqual(from_cause("Cause: x"), "Cause: x")
+        self.assertEqual(from_cause("no shape at all"), "no shape at all")
+
+
 class RedactTest(unittest.TestCase):
     def test_secrets_are_masked(self):
         text = "API_KEY=abc123 password: hunter2 Authorization: Bearer eyJhbGciOi.x.y token=zzz ok=1"

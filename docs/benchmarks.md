@@ -165,3 +165,11 @@ Re-run with six categories (int8 + bf16 embeddings):
 | lifeboat_stale | data_at_risk (0.50) | escalate |
 
 Every top choice is now the expected category. lifeboat_recovered first went to Bedrock: unsure (0.45) with `data_at_risk` as the runner-up, and the safer-route rule picked escalate. Hesitation should not buy a Bedrock call, so the safer route is now capped at notify. Bedrock: 4 of 10 fixtures, exactly the four with an outage or unprotected data.
+
+## First live backup alert (`scripts/demo.sh backup`)
+
+Transient unit fails with `s3.PutObject: Access Denied (403)`. Decider `data_at_risk` 0.84 in 4.1 s; Sonnet 4.6 read `backup_logs`, quoted the 403 line, checked host resources, ~5 s, 3,298 + 337 tokens (~$0.016). Diagnosis correct, three flaws in the reply, all fixed:
+
+1. A preamble before `Cause:`. Prompt now says to start with `Cause:` and the code cuts anything before it.
+2. It suggested re-enabling `lifeboat-backup-demo.timer`, which does not exist. Our bug: `systemctl is-active` prints `inactive` for a unit that does not exist, so the event said `timer=inactive`. The collector now checks `LoadState` and reports `timer=none`.
+3. It invented `/etc/lifeboat/demo.env`. The prompt now carries the real lifeboat paths and says not to guess paths.

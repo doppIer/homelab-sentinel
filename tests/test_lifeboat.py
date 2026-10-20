@@ -20,12 +20,13 @@ class FakeSystemd:
     def __call__(self, cmd):
         if cmd[1] == "list-units":
             return "\n".join(f"{u} loaded failed failed demo" for u in self.listed)
+        if cmd[1] == "show" and cmd[2].endswith(".timer"):
+            state = self.timers.get(cmd[2])
+            return f"LoadState=loaded\nActiveState={state}" if state else "LoadState=not-found\nActiveState=inactive"
         if cmd[1] == "show":
             unit = cmd[3]
             info = self.units.get(unit, {"LoadState": "not-found", "ActiveState": "inactive", "Result": "success", "ExecMainStatus": "0", "ExecMainExitTimestamp": ""})
             return "\n".join(f"{k}={v}" for k, v in info.items())
-        if cmd[1] == "is-active":
-            return self.timers.get(cmd[2], "inactive")
         return ""
 
 
@@ -61,6 +62,11 @@ class LifeboatTest(unittest.TestCase):
         self.assertIn("backup=tier1 unit=lifeboat-backup@tier1.service tool=restic last_run=failed result=exit-code exit_code=1 finished=0.5h ago rpo_target=6h timer=active", state)
         self.assertEqual(self.collector.changes(), [])
 
+    def test_disabled_timer_is_reported(self):
+        self.systemd.units["lifeboat-backup@tier2.service"] = unit(hours_ago=40)
+        self.systemd.timers["lifeboat-backup-tier2.timer"] = "inactive"
+        self.assertIn("timer=inactive", self.collector.changes()[0].state)
+
     def test_stale_tier1_after_rpo_plus_grace(self):
         self.systemd.units["lifeboat-backup@tier1.service"] = unit(hours_ago=6.5)
         self.assertEqual(self.collector.changes(), [])
@@ -86,7 +92,7 @@ class LifeboatTest(unittest.TestCase):
         self.systemd.units["lifeboat-backup-demo.service"] = unit(result="exit-code", exit_code="1", hours_ago=0.01)
         events = self.collector.changes()
         self.assertEqual(events[0].subject, "demo")
-        self.assertIn("rpo_target=24h timer=inactive", events[0].state)
+        self.assertIn("rpo_target=24h timer=none", events[0].state)
 
 
 if __name__ == "__main__":

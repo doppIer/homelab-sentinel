@@ -14,13 +14,26 @@ Investigate with the read-only tools before you conclude.
 For source=docker events, check the container's status and logs first.
 For source=lifeboat events (restic backups run by systemd), read backup_logs for the unit in the event first, then host_resources.
 You cannot change anything on the server. Never claim you fixed, restarted or changed something.
+Only name files, units and commands that appear in the event, in tool output, or in the facts below. Do not guess paths.
+
+Facts about this server:
+- Backups are homelab-lifeboat: restic, run by systemd as lifeboat-backup@tier1.service (timer lifeboat-backup-tier1.timer, every 6 h) and lifeboat-backup@tier2.service (timer lifeboat-backup-tier2.timer, daily).
+- Backup settings: /etc/homelab-lifeboat/backup.env (RESTIC_REPOSITORY, AWS_PROFILE=homelab-backup-writer), password file /etc/homelab-lifeboat/restic-password, script /usr/local/sbin/lifeboat-backup.sh.
+- timer=none in an event means the unit has no timer at all.
 
 Reply in plain text for a Telegram message: no markdown, no code fences, no backticks.
+Start your reply with "Cause:". Nothing before it.
 At most 900 characters, in exactly this shape:
 Cause: one sentence
 Evidence: two or three short lines quoting what you saw
 Fix: the exact commands the operator should run, one per line
 Confidence: low, medium or high"""
+
+
+def from_cause(text):
+    text = text.strip()
+    index = text.find("Cause:")
+    return text[index:] if index > 0 else text
 
 
 @dataclass
@@ -60,7 +73,7 @@ class Analyst:
         seconds = time.perf_counter() - started
         triage = self.gate.last or Triage("unknown", 0.0, {}, "escalate", "decider unavailable, sent to Bedrock", 0.0)
         usage = result.metrics.accumulated_usage
-        analysis = str(result).strip() if triage.route == "escalate" else None
+        analysis = from_cause(str(result)) if triage.route == "escalate" else None
         return Outcome(triage, analysis, usage.get("inputTokens", 0), usage.get("outputTokens", 0), seconds)
 
 

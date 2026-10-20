@@ -14,6 +14,7 @@ CRITERIA = {
     "recovered_failure": "something crashed or failed but is running again",
     "ongoing_outage": "a service is down or unhealthy right now",
     "resource_risk": "disk, memory or CPU is running out or trending toward failure",
+    "data_at_risk": "a backup or other data protection job failed or is overdue; nothing is down yet, but data is unprotected",
 }
 ```
 
@@ -21,7 +22,7 @@ CRITERIA = {
 
 | Decider says | Route |
 |---|---|
-| `ongoing_outage` | escalate to Bedrock for root cause |
+| `ongoing_outage`, `data_at_risk` | escalate to Bedrock for root cause |
 | anything else, but P(`ongoing_outage`) >= `outage_risk` (default 0.25) | escalate to Bedrock |
 | confidence below `unsure_below` (default 0.5) | the more cautious route of the top two answers |
 | `recovered_failure`, `resource_risk` | notify the operator |

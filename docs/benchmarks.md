@@ -136,3 +136,15 @@ The embedding table is 509M parameters (about 2 GB in fp32). Stored in bf16 with
 | Same top choice as fp32 | 7/7 | 7/7 | 7/7 |
 
 Finding: int8 keeps every top choice (7/7) and is 15% faster with 2.7 GB less memory, but confidence drops by 0.02-0.33. One route moved, toward caution (digest -> notify), because the low-confidence rule takes the safer of the top two answers. No outage was routed away from Bedrock. The remaining ~5 GB is mostly the fp32 embedding table, which int8 Linear quantization does not touch.
+
+## Lifeboat backups: a sixth category
+
+First run of the three lifeboat fixtures against the five categories:
+
+| Fixture | Choice (conf) | Route |
+|---|---|---|
+| lifeboat_failed | routine (0.15) | escalate, only because P(ongoing_outage)=0.29 |
+| lifeboat_stale (31 h since last success, RPO 6 h) | routine (0.44) | escalate, only through the safer-route rule |
+| lifeboat_recovered | recovered_failure (0.48) | notify |
+
+None of the five categories describes "nothing is down, but data is unprotected", so Decider fell back to `routine`. Added a factual category, `data_at_risk`, routed to Bedrock. Re-run of all fixtures below.

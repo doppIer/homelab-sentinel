@@ -11,6 +11,7 @@ CRITERIA = {
     "recovered_failure": "something crashed or failed but is running again",
     "ongoing_outage": "a service is down or unhealthy right now",
     "resource_risk": "disk, memory or CPU is running out or trending toward failure",
+    "data_at_risk": "a backup or other data protection job failed or is overdue; nothing is down yet, but data is unprotected",
 }
 
 ROUTES = {
@@ -19,6 +20,7 @@ ROUTES = {
     "recovered_failure": "notify",
     "resource_risk": "notify",
     "ongoing_outage": "escalate",
+    "data_at_risk": "escalate",
 }
 
 SEVERITY = ["drop", "digest", "notify", "escalate"]

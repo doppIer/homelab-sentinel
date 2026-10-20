@@ -1,0 +1,15 @@
+{
+ "state": "source=docker container=jellyfin image=jellyfin/jellyfin:latest steps=oom>die(exit 137)>start outcome=running_again exit_codes=137 graceful_stop=no crash_reason=SIGKILL, often out of memory or docker kill out_of_memory=yes starts_last_hour=4 compose_project=jellyfin",
+ "questions": {
+  "severity": {
+   "type": "choice",
+   "instructions": "How should a homelab operator treat this event?",
+   "criteria": {
+    "noise": "routine log line, nothing to do",
+    "info": "worth a line in the daily summary, no action",
+    "action_needed": "operator should fix it within a day",
+    "critical": "service down, data at risk, or failure within hours"
+   }
+  }
+ }
+}

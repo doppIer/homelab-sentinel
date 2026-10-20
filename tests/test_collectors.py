@@ -118,3 +118,45 @@ class RouteTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class DockerSummaryTest(unittest.TestCase):
+    def burst(self, collector, steps, name="mympd", t0=1000):
+        events = []
+        for i, (action, extra) in enumerate(steps):
+            events.append(collector.to_event(docker_raw(action, name=name, t=t0 + i, **extra)))
+        return collector.summarize(events)
+
+    def test_planned_restart_is_graceful_and_running(self):
+        steps = [("kill", {"signal": "15"}), ("die", {"exitCode": "143"}), ("stop", {}), ("start", {}), ("restart", {})]
+        event = self.burst(DockerEvents(), steps)
+        self.assertIn("steps=kill(signal 15)>die(exit 143)>stop>start>restart", event.state)
+        self.assertIn("outcome=running_again", event.state)
+        self.assertIn("graceful_stop=yes", event.state)
+        self.assertIn("starts_last_hour=1", event.state)
+        self.assertNotIn("crash_reason", event.state)
+        self.assertEqual(event.kind, "kill..restart")
+
+    def test_oom_crash_loop(self):
+        collector = DockerEvents()
+        for k in range(3):
+            self.burst(collector, [("die", {"exitCode": "137"}), ("start", {})], name="jellyfin", t0=1000 + k * 60)
+        event = self.burst(collector, [("oom", {}), ("die", {"exitCode": "137"}), ("start", {})], name="jellyfin", t0=1300)
+        self.assertIn("graceful_stop=no", event.state)
+        self.assertIn("crash_reason=SIGKILL, often out of memory or docker kill", event.state)
+        self.assertIn("out_of_memory=yes", event.state)
+        self.assertIn("starts_last_hour=4", event.state)
+
+    def test_container_left_down(self):
+        event = self.burst(DockerEvents(), [("die", {"exitCode": "1"})], name="opengym-api-1")
+        self.assertIn("outcome=down", event.state)
+        self.assertIn("crash_reason=application error", event.state)
+
+    def test_coalescer_uses_summarizer(self):
+        collector = DockerEvents()
+        coalescer = Coalescer(window=15, summarizers={"docker": collector.summarize})
+        coalescer.add(collector.to_event(docker_raw("die", name="mympd", exitCode="143")), now=100)
+        coalescer.add(collector.to_event(docker_raw("start", name="mympd")), now=101)
+        out = coalescer.ready(now=120)
+        self.assertEqual(len(out), 1)
+        self.assertIn("outcome=running_again", out[0].state)

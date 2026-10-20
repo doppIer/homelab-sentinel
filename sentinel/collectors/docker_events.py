@@ -20,6 +20,20 @@ EXIT_CODES = {
 }
 
 
+GRACEFUL_EXIT = {"0", "143"}
+UP_KINDS = {"start", "restart", "health_status:healthy"}
+DOWN_KINDS = {"die", "stop", "kill", "oom", "health_status:unhealthy"}
+
+
+def step_label(event):
+    attrs = event.raw.get("Actor", {}).get("Attributes", {})
+    if event.kind == "die" and "exitCode" in attrs:
+        return f"die(exit {attrs['exitCode']})"
+    if event.kind == "kill" and "signal" in attrs:
+        return f"kill(signal {attrs['signal']})"
+    return event.kind
+
+
 class DockerEvents:
     def __init__(self, window_seconds=3600):
         self.window = window_seconds
@@ -72,6 +86,53 @@ class DockerEvents:
             state=" ".join(parts),
             raw=raw,
             ts=now,
+        )
+
+    def summarize(self, events):
+        first, last = events[0], events[-1]
+        attrs = first.raw.get("Actor", {}).get("Attributes", {})
+        kinds = [e.kind for e in events]
+        exit_codes = [e.raw.get("Actor", {}).get("Attributes", {}).get("exitCode") for e in events if e.kind == "die"]
+        exit_codes = [c for c in exit_codes if c is not None]
+        crashed = [c for c in exit_codes if c not in GRACEFUL_EXIT]
+
+        if last.kind in UP_KINDS:
+            outcome = "running_again" if any(k in DOWN_KINDS for k in kinds) else "running"
+        elif last.kind in DOWN_KINDS:
+            outcome = "down"
+        else:
+            outcome = "unknown"
+
+        restarts = len([t for t in self.history[(first.subject, "start")] if last.ts - t <= self.window])
+
+        parts = [
+            "source=docker",
+            f"container={first.subject}",
+            f"image={attrs.get('image', '?')}",
+            f"steps={'>'.join(step_label(e) for e in events)}",
+            f"outcome={outcome}",
+        ]
+        if exit_codes:
+            parts.append(f"exit_codes={','.join(exit_codes)}")
+            parts.append(f"graceful_stop={'no' if crashed else 'yes'}")
+        if crashed:
+            parts.append(f"crash_reason={'; '.join(EXIT_CODES.get(c, 'unknown code ' + c) for c in crashed)}")
+        if "oom" in kinds:
+            parts.append("out_of_memory=yes")
+        if "health_status:unhealthy" in kinds:
+            parts.append("healthcheck_failed=yes")
+        parts.append(f"starts_last_hour={restarts}")
+        project = attrs.get("com.docker.compose.project")
+        if project:
+            parts.append(f"compose_project={project}")
+
+        return Event(
+            source="docker",
+            subject=first.subject,
+            kind=last.kind if len(events) == 1 else f"{kinds[0]}..{last.kind}",
+            state=" ".join(parts),
+            raw={"events": [e.raw for e in events]},
+            ts=last.ts,
         )
 
     def stream(self):

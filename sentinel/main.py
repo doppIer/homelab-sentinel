@@ -56,8 +56,11 @@ def main():
     log_path.parent.mkdir(parents=True, exist_ok=True)
 
     sources = []
+    summarizers = {}
     if not args.no_docker:
-        sources.append(DockerEvents())
+        docker = DockerEvents()
+        sources.append(docker)
+        summarizers["docker"] = docker.summarize
     if not args.no_netdata:
         sources.append(NetdataAlarms(os.getenv("NETDATA_URL", "http://127.0.0.1:19999"), int(os.getenv("NETDATA_INTERVAL", "60"))))
 
@@ -65,7 +68,7 @@ def main():
     for source in sources:
         threading.Thread(target=pump, args=(source, inbox), daemon=True).start()
 
-    coalescer = Coalescer(window=float(os.getenv("COALESCE_SECONDS", "15")))
+    coalescer = Coalescer(window=float(os.getenv("COALESCE_SECONDS", "15")), summarizers=summarizers)
     telegram = Telegram.from_env()
     print(f"sentinel up: {len(sources)} sources, telegram={'on' if telegram else 'off'}, decisions -> {log_path}", flush=True)
 

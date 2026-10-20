@@ -12,7 +12,6 @@ candidates = [
     "eu.anthropic.claude-sonnet-5",
     "eu.anthropic.claude-sonnet-4-6",
     "eu.anthropic.claude-haiku-4-5-20251001-v1:0",
-    "eu.anthropic.claude-sonnet-4-5-20250929-v1:0",
     "global.anthropic.claude-haiku-5-5",
     "global.anthropic.claude-sonnet-5-5",
 ]

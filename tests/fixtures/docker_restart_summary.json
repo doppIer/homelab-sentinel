@@ -1,0 +1,15 @@
+{
+ "state": "source=docker container=mympd image=ghcr.io/jcorporation/mympd/mympd steps=kill(signal 15)>die(exit 143)>stop>start>restart outcome=running_again exit_codes=143 graceful_stop=yes starts_last_hour=1 compose_project=mympd",
+ "questions": {
+  "severity": {
+   "type": "choice",
+   "instructions": "How should a homelab operator treat this event?",
+   "criteria": {
+    "noise": "routine log line, nothing to do",
+    "info": "worth a line in the daily summary, no action",
+    "action_needed": "operator should fix it within a day",
+    "critical": "service down, data at risk, or failure within hours"
+   }
+  }
+ }
+}

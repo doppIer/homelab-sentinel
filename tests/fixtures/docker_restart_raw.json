@@ -1,0 +1,15 @@
+{
+ "state": "source=docker container=mympd image=ghcr.io/jcorporation/mympd/mympd event=restart same_event_last_hour=1 compose_project=mympd sequence=kill>die>stop>start>restart events_in_burst=5",
+ "questions": {
+  "severity": {
+   "type": "choice",
+   "instructions": "How should a homelab operator treat this event?",
+   "criteria": {
+    "noise": "routine log line, nothing to do",
+    "info": "worth a line in the daily summary, no action",
+    "action_needed": "operator should fix it within a day",
+    "critical": "service down, data at risk, or failure within hours"
+   }
+  }
+ }
+}

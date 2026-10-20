@@ -1,0 +1,15 @@
+{
+ "state": "source=docker container=hermes-gateway image=nousresearch/hermes-agent:latest steps=health_status:unhealthy outcome=down healthcheck_failed=yes starts_last_hour=0 compose_project=hermes-docker-compose",
+ "questions": {
+  "severity": {
+   "type": "choice",
+   "instructions": "How should a homelab operator treat this event?",
+   "criteria": {
+    "noise": "routine log line, nothing to do",
+    "info": "worth a line in the daily summary, no action",
+    "action_needed": "operator should fix it within a day",
+    "critical": "service down, data at risk, or failure within hours"
+   }
+  }
+ }
+}

@@ -43,6 +43,7 @@ class TriageHttpTest(unittest.TestCase):
             result = triage("source=netdata alarm=disk_space_usage status=WARNING value=97%")
         finally:
             server.shutdown()
+            server.server_close()
         self.assertEqual(result.choice, "action_needed")
         self.assertEqual(result.route, "notify")
         self.assertEqual(result.latency_ms, 3800.0)

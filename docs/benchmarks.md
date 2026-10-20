@@ -148,3 +148,20 @@ First run of the three lifeboat fixtures against the five categories:
 | lifeboat_recovered | recovered_failure (0.48) | notify |
 
 None of the five categories describes "nothing is down, but data is unprotected", so Decider fell back to `routine`. Added a factual category, `data_at_risk`, routed to Bedrock. Re-run of all fixtures below.
+
+Re-run with six categories (int8 + bf16 embeddings):
+
+| Fixture | Choice (conf) | Route |
+|---|---|---|
+| disk_enriched | resource_risk (0.90) | notify |
+| disk_raw | resource_risk (0.79) | notify |
+| docker_app_down | ongoing_outage (0.58) | escalate |
+| docker_oom_crashloop | recovered_failure (0.69) | notify |
+| docker_restart_raw | planned_change (0.45) | notify (unsure) |
+| docker_restart_summary | planned_change (0.45) | notify (unsure) |
+| docker_unhealthy | ongoing_outage (0.68) | escalate |
+| lifeboat_failed | data_at_risk (0.86) | escalate |
+| lifeboat_recovered | recovered_failure (0.45) | notify (unsure, see below) |
+| lifeboat_stale | data_at_risk (0.50) | escalate |
+
+Every top choice is now the expected category. lifeboat_recovered first went to Bedrock: unsure (0.45) with `data_at_risk` as the runner-up, and the safer-route rule picked escalate. Hesitation should not buy a Bedrock call, so the safer route is now capped at notify. Bedrock: 4 of 10 fixtures, exactly the four with an outage or unprotected data.

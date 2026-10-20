@@ -24,12 +24,12 @@ CRITERIA = {
 |---|---|
 | `ongoing_outage`, `data_at_risk` | escalate to Bedrock for root cause |
 | anything else, but P(`ongoing_outage`) >= `outage_risk` (default 0.25) | escalate to Bedrock |
-| confidence below `unsure_below` (default 0.5) | the more cautious route of the top two answers |
+| confidence below `unsure_below` (default 0.5) | the more cautious route of the top two answers, capped at notify |
 | `recovered_failure`, `resource_risk` | notify the operator |
 | `planned_change` | daily digest |
 | `routine` | drop |
 
-Bedrock is paid for one thing: outages, or events where an outage is plausible. When Decider hesitates between two cheap answers (say `planned_change` vs `recovered_failure`), the policy takes the more cautious of the two (a notification instead of a digest line) without calling the big model. Severity lives in this table, which you can change without retraining or re-prompting anything.
+Bedrock is paid for one thing: an outage or unprotected data that Decider names outright, or an outage that is plausible (P >= 0.25). Hesitation never buys a Bedrock call. When Decider wavers between two answers (say `planned_change` vs `recovered_failure`), the policy takes the more cautious of the two, at most a notification. Severity lives in this table, which you can change without retraining or re-prompting anything.
 
 ## Use it
 

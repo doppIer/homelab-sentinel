@@ -74,6 +74,8 @@ class LogTriage:
             ranked = sorted(probabilities, key=probabilities.get, reverse=True)
             runner_up = next((c for c in ranked if c != choice), choice)
             safer = max(self.routes[choice], self.routes[runner_up], key=SEVERITY.index)
+            if safer == "escalate":
+                safer = "notify"
             return safer, f"unsure between {choice} and {runner_up} ({confidence:.2f}), took the safer route"
         return self.routes[choice], f"decider saw {choice} at {confidence:.2f}"
 

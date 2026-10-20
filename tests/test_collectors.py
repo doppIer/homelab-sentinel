@@ -88,7 +88,7 @@ class RouteTest(unittest.TestCase):
         self.triage = LogTriage(unsure_below=0.5, outage_risk=0.25)
 
     def probs(self, **kw):
-        base = {"routine": 0.0, "planned_change": 0.0, "recovered_failure": 0.0, "ongoing_outage": 0.0, "resource_risk": 0.0}
+        base = {"routine": 0.0, "planned_change": 0.0, "recovered_failure": 0.0, "ongoing_outage": 0.0, "resource_risk": 0.0, "data_at_risk": 0.0}
         base.update(kw)
         return base
 
@@ -107,6 +107,16 @@ class RouteTest(unittest.TestCase):
         route, reason = self.triage.route("planned_change", 0.46, p)
         self.assertEqual(route, "notify")
         self.assertIn("unsure between planned_change and recovered_failure", reason)
+
+    def test_hesitation_never_buys_a_bedrock_call(self):
+        p = self.probs(recovered_failure=0.54, data_at_risk=0.23, routine=0.12, ongoing_outage=0.04)
+        route, reason = self.triage.route("recovered_failure", 0.45, p)
+        self.assertEqual(route, "notify")
+        self.assertIn("unsure between recovered_failure and data_at_risk", reason)
+
+    def test_data_at_risk_escalates(self):
+        p = self.probs(data_at_risk=0.89, ongoing_outage=0.04)
+        self.assertEqual(self.triage.route("data_at_risk", 0.86, p)[0], "escalate")
 
     def test_unsure_between_two_quiet_routes_stays_quiet(self):
         p = self.probs(routine=0.5, planned_change=0.4, ongoing_outage=0.02)

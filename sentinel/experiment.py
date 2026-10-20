@@ -26,6 +26,23 @@ NOUL = {
 }
 
 
+WHAT_HAPPENED = {
+    "routine": "normal background activity, nothing changed",
+    "planned_change": "an operator or an update intentionally restarted, stopped or changed something",
+    "recovered_failure": "something crashed or failed but is running again",
+    "ongoing_outage": "a service is down or unhealthy right now",
+    "resource_risk": "disk, memory or CPU is running out or trending toward failure",
+}
+
+
+def questions_v2():
+    return {
+        "what": {"type": "choice", "instructions": "What happened on this server?", "criteria": WHAT_HAPPENED},
+        "failure": {"type": "noul", "instructions": NOUL["failure"]},
+        "down": {"type": "noul", "instructions": NOUL["down"]},
+    }
+
+
 def questions():
     q = {
         "choice": {"type": "choice", "instructions": QUESTION, "criteria": CRITERIA},
@@ -49,7 +66,10 @@ def ask(url, state, qs):
 def main(paths):
     load_dotenv(".env")
     url = os.getenv("DECIDER_URL", "http://127.0.0.1:8765").rstrip("/") + "/v1/systemone"
-    qs = questions()
+    v2 = paths and paths[0] == "--v2"
+    if v2:
+        paths = paths[1:]
+    qs = questions_v2() if v2 else questions()
     rows = []
     for path in paths:
         name = os.path.basename(path).removesuffix(".json")
@@ -57,16 +77,22 @@ def main(paths):
         data = ask(url, state, qs)
         a = data["answers"]
         rows.append({"fixture": name, "expected": EXPECTED.get(name, "?"), "latency_ms": data["latency_ms"], "answers": a})
+        print(f"\n{name}  (expected {EXPECTED.get(name, '?')})  {data['latency_ms']:.0f}ms for {len(qs)} questions")
+        if v2:
+            w = a["what"]
+            probs = " ".join(f"{k}={v:.2f}" for k, v in sorted(w["probabilities"].items(), key=lambda kv: -kv[1]))
+            print(f"  what:   {w['choice']} conf={w.get('confidence', 0):.2f} | {probs}")
+            print(f"  noul:   failure={a['failure']['noul']:.2f} down={a['down']['noul']:.2f}")
+            continue
         c = a["choice"]
         s = a["score"]
         noul = " ".join(f"{k}={a[k]['noul']:.2f}" for k in NOUL)
         score_view = {k: v for k, v in s.items() if k != "type" and not isinstance(v, dict)}
-        print(f"\n{name}  (expected {EXPECTED.get(name, '?')})  {data['latency_ms']:.0f}ms for {len(qs)} questions")
         print(f"  choice: {c['choice']} conf={c.get('confidence', 0):.2f}")
         print(f"  score:  {score_view}")
         print(f"  noul:   {noul}")
     os.makedirs("logs", exist_ok=True)
-    out = f"logs/experiment-{int(time.time())}.json"
+    out = f"logs/experiment-{'v2-' if v2 else ''}{int(time.time())}.json"
     json.dump(rows, open(out, "w"), indent=1)
     print(f"\nraw answers -> {out}")
 

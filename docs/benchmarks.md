@@ -88,6 +88,19 @@ A throwaway container prints `FATAL: could not connect to database at db:5432` a
 
 Price used: eu.anthropic.claude-sonnet-4-6 on Bedrock, $3.30 / M input, $16.50 / M output.
 Events that did not escalate today (restarts, planned changes) cost 0 Bedrock calls: the gate Denies them before any model call.
-## Model choice
+## Model choice: Haiku 4.5 vs Sonnet 4.6 for outage analysis
 
-Tried to move analysis to Claude Haiku 4.5 (about 3x cheaper per token). The account could not complete the AWS Marketplace subscription for Haiku 4.5, even with `aws-marketplace:Subscribe` granted. Stayed on Sonnet 4.6 for analysis and the daily digest. With the Decider gate in front, only outages reach Bedrock, so the model price is not the cost driver: about $0.014 per analysis with Sonnet versus about $0.005 with Haiku.
+Same two live scenarios, same tools, same prompt (`scripts/demo.sh crash`, `scripts/demo.sh oom`). Time includes the 4 s Decider gate.
+
+| Scenario | Model | Diagnosis | Fix command | Time | Tokens in/out | Cost |
+|---|---|---|---|---|---|---|
+| crash (db unreachable) | Haiku 4.5 | correct | assumes a container named `db` exists | 7.7 s | 2,616 / 275 | $0.0044 |
+| crash (db unreachable) | Sonnet 4.6 | correct, noted `restart_policy=no` | checks `db` status and logs first | 8.3 s | 2,616 / 305 | $0.0137 |
+| oom (64 MB limit) | Haiku 4.5 | correct: oom_killed, 64 MB limit | `docker update --memory 512m` fails: the container also has `--memory-swap 64m`, and Docker rejects a memory limit above the swap limit | 10.4 s | 3,614 / 325 | $0.0058 |
+| oom (64 MB limit) | Sonnet 4.6 | correct, and ruled out host memory pressure | `docker update --memory 512m --memory-swap 512m` works | 8.1 s | 2,825 / 282 | $0.0140 |
+
+Prices: eu cross-region, Haiku 4.5 $1.10 / $5.50, Sonnet 4.6 $3.30 / $16.50 per million tokens.
+
+Decision: Sonnet 4.6 for outage analysis, because the operator copies the fix commands and a command that fails at 3 a.m. costs more than one cent. Haiku 4.5 for the daily digest, which only summarizes and suggests nothing to run. The Decider gate is what keeps cost low: only outages reach the analysis model.
+
+Side note: in both runs Netdata raised its own `mem.oom_kill` alarm for the OOM demo, which Decider classified as `resource_risk` (0.84, notify). Two independent collectors saw the same incident.

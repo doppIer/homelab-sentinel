@@ -44,7 +44,10 @@ Hardware: Dell T1700 SFF, Intel i5-4590 (2014, 4 cores, AVX2, no bf16), 16 GB RA
 - An unsure recovery (runner-up `data_at_risk`) was sent to Bedrock by the safer-route rule. Hesitation is now capped at notify.
 - First live backup alert: correct diagnosis, but it suggested a timer that does not exist (our collector said `timer=inactive` for a missing unit) and invented a config path. Fixed the collector, grounded the prompt in the real lifeboat paths, and cut any preamble before `Cause:`.
 
-## Still to do
+## Day 4, Thursday 22 October
 
-- One day of real traffic: how many events, how many reached Bedrock, cost versus sending everything
-- README, public repo, demo video, Builder Center article
+- Traffic report (`sentinel/report.py`) over the decision log since the final policy went live (Tue 17:28 UTC). About 40 hours, zero real events: nothing crashed, restarted, alarmed or failed a backup. The 21:00 digest on Wednesday saw zero events and made no Bedrock call.
+- Checked that zero meant quiet and not broken: `docker restart mympd` reached the log 18 s later as `planned_change` 0.72, route digest.
+- Found three orphaned `docker events` processes left by earlier manual runs. The child now gets SIGTERM when its parent dies (`PR_SET_PDEATHSIG`).
+- `scripts/scenario.sh`: a 10-minute live run (planned restarts and a stop/start on real containers, then crash, OOM and failed backup) followed by the report for exactly that window.
+- README, setup guide, demo script and article.

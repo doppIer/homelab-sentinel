@@ -103,7 +103,8 @@ def main():
     print(f"## Live traffic report (since {args.since})\n")
     analyses, _, _, cost = cost_of(rows)
     reference = cost / len(analyses) if analyses else 0.0145
-    print(summarize(real, "Real events (demo scenarios excluded)", reference))
+    print(summarize(rows, "All events", reference))
+    print(summarize(real, "Real containers and backups (demo scenarios excluded)", reference))
     print(summarize(demo, "Demo scenarios", reference))
 
 

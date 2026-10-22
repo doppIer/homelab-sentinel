@@ -8,7 +8,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from decision_patterns.log_triage import LogTriage
+from decision_patterns.log_triage import LogTriage, Triage
 from sentinel.coalesce import Coalescer
 from sentinel.collectors.docker_events import DockerEvents
 from sentinel.collectors.lifeboat import LifeboatBackups
@@ -107,7 +107,8 @@ def main():
                     result = triage(event.state)
             except Exception as e:
                 print(f"[sentinel error] {type(e).__name__}: {e} | {event.state}", flush=True)
-                continue
+                result = Triage("unknown", 0.0, {}, "notify", f"decider failed ({type(e).__name__}), sent unclassified", 0.0)
+                outcome = None
             record(log_path, event, result, outcome)
             stamp = time.strftime("%H:%M:%S", time.localtime(event.ts))
             print(f"{stamp} [{ICONS[result.route]:>2}] {result.route:<8} {result.choice:<13} {result.confidence:.2f} {result.latency_ms:>6.0f}ms {event.source}/{event.subject} {event.kind} | {result.reason}", flush=True)

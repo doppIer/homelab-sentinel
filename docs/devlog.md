@@ -52,3 +52,7 @@ Hardware: Dell T1700 SFF, Intel i5-4590 (2014, 4 cores, AVX2, no bf16), 16 GB RA
 - `scripts/scenario.sh`: a 10-minute live run (planned restarts and a stop/start on real containers, then crash, OOM and failed backup) followed by the report for exactly that window.
 - Scenario result: 9 events in 11 minutes. 5 handled by Decider alone, 4 to Bedrock, $0.087 actual vs $0.195 if all had gone to Bedrock. All three real failures escalated and diagnosed correctly. One false escalation: `docker stop homarr` (ongoing_outage 0.59); Sonnet confirmed a clean intentional stop for $0.025. dashdot ignored SIGTERM and was SIGKILLed at the stop timeout; Decider called it `recovered_failure` (notify).
 - README, setup guide, demo script and article.
+- Review before going public found four gaps, all fixed with tests:
+  - Secret redaction missed names with underscores (`AWS_SECRET_ACCESS_KEY`, `POSTGRES_PASSWORD`, `DB_PASS`), passwords inside URLs and Basic auth. Redaction now covers those plus known token shapes (AWS key ids, GitHub, OpenAI, Slack, Telegram), runs before tool output is cut, and runs again on everything sent to Telegram.
+  - A category missing from the routes table raised `KeyError`; it now goes to `unknown_route` (notify). If Decider itself fails without Bedrock configured, the event is sent unclassified instead of dropped.
+  - Escalations had no Telegram cooldown, so a crash loop would alert on every burst. Now once per 15 minutes per service, with the number of suppressed repeats in the next alert.

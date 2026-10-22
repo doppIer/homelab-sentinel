@@ -6,9 +6,6 @@ Strands Decider 2B runs on a 2014 CPU in my homelab and looks at every event the
 
 Built for the AWS Agent Experience Hackathon. Decision pattern: `#policy`.
 
-Demo video (under 3 min): {{VIDEO_URL}}
-Article: {{ARTICLE_URL}}
-
 ## How it works
 
 ```
@@ -24,7 +21,7 @@ docker events      Netdata alarms      lifeboat backups (systemd)
      └─ Claude Sonnet 4.6 on Bedrock          read-only tools: logs, status, stats,
                                               host resources, backup journal
                          |
-   escalate  -> Telegram now: Cause / Evidence / Fix / Confidence
+   escalate  -> Telegram now: Cause / Evidence / Fix / Confidence; a crash loop alerts once per 15 min
    notify    -> Telegram now, short, 10 min cooldown per service
    digest    -> one Haiku 4.5 summary at 21:00 (no Bedrock call on a quiet day)
    drop      -> decision log only

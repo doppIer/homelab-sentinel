@@ -2,7 +2,7 @@
 
 Tags: `#strands-decider-2b` `#policy`
 
-Code: https://github.com/doppIer/homelab-sentinel · Demo: {{VIDEO_URL}}
+Code: https://github.com/doppIer/homelab-sentinel
 
 My home server is a Dell T1700 from 2014: an Intel i5-4590, 16 GB of RAM, no GPU, and 17 Docker containers. It produces a steady trickle of events. Containers restart after updates, Netdata complains about disk space, restic backups run every six hours. Almost none of it needs me. Once in a while something breaks and I want to know why, quickly, ideally with the command that fixes it.
 

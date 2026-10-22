@@ -6,6 +6,8 @@ import urllib.request
 
 from dotenv import load_dotenv
 
+from sentinel.redact import redact
+
 ICONS = {"escalate": "🔴", "notify": "🟠", "digest": "🔵", "drop": "⚪"}
 
 
@@ -17,7 +19,7 @@ def api_call(token, method, payload=None):
         return json.load(r)
 
 
-def format_message(event, result, host="homeserver", analysis=None):
+def format_message(event, result, host="homeserver", analysis=None, repeats=0):
     icon = ICONS.get(result.route, "")
     lines = [
         f"{icon} {result.route.upper()} · {host} · {event.source}/{event.subject}",
@@ -25,18 +27,22 @@ def format_message(event, result, host="homeserver", analysis=None):
         f"Decider: {result.choice} ({result.confidence:.2f}) in {result.latency_ms / 1000:.1f}s",
         f"Why: {result.reason}",
         "",
-        event.state[:900],
+        redact(event.state)[:900],
     ]
+    if repeats:
+        lines.insert(1, f"repeated {repeats} more times since the last alert, those were not sent")
     if analysis:
-        lines += ["", "🧠 Bedrock:", analysis[:1800]]
+        lines += ["", "🧠 Bedrock:", redact(analysis)[:1800]]
     return "\n".join(lines)
 
 
 class Telegram:
-    def __init__(self, token, chat_id, cooldown=600, post=None):
+    def __init__(self, token, chat_id, cooldown=600, post=None, escalate_cooldown=900):
         self.token = token
         self.chat_id = chat_id
         self.cooldown = cooldown
+        self.escalate_cooldown = escalate_cooldown
+        self.suppressed = {}
         self.post = post or (lambda text: api_call(self.token, "sendMessage", {"chat_id": self.chat_id, "text": text, "link_preview_options": {"is_disabled": True}}))
         self.sent = {}
 
@@ -46,11 +52,12 @@ class Telegram:
         chat_id = os.getenv("TELEGRAM_CHAT_ID")
         if not token or not chat_id:
             return None
-        return cls(token, chat_id, int(os.getenv("TELEGRAM_COOLDOWN", "600")))
+        return cls(token, chat_id, int(os.getenv("TELEGRAM_COOLDOWN", "600")), escalate_cooldown=int(os.getenv("TELEGRAM_ESCALATE_COOLDOWN", "900")))
 
-    def allowed(self, key, now):
+    def allowed(self, key, now, cooldown):
         last = self.sent.get(key)
-        if last is not None and now - last < self.cooldown:
+        if last is not None and now - last < cooldown:
+            self.suppressed[key] = self.suppressed.get(key, 0) + 1
             return False
         self.sent[key] = now
         return True
@@ -59,9 +66,12 @@ class Telegram:
         now = time.time() if now is None else now
         if result.route not in ("notify", "escalate"):
             return False
-        if result.route == "notify" and not self.allowed((event.source, event.subject, result.route), now):
+        key = (event.source, event.subject, result.route)
+        cooldown = self.escalate_cooldown if result.route == "escalate" else self.cooldown
+        if not self.allowed(key, now, cooldown):
             return False
-        self.post(format_message(event, result, os.getenv("SENTINEL_HOST", "homeserver"), analysis))
+        repeats = self.suppressed.pop(key, 0)
+        self.post(format_message(event, result, os.getenv("SENTINEL_HOST", "homeserver"), analysis, repeats))
         return True
 
 

@@ -38,7 +38,7 @@ class Triage:
 
 
 class LogTriage:
-    def __init__(self, url="http://127.0.0.1:8765", unsure_below=0.5, outage_risk=0.25, timeout=60, question=QUESTION, criteria=CRITERIA, routes=ROUTES):
+    def __init__(self, url="http://127.0.0.1:8765", unsure_below=0.5, outage_risk=0.25, timeout=60, question=QUESTION, criteria=CRITERIA, routes=ROUTES, unknown_route="notify"):
         self.url = url.rstrip("/") + "/v1/systemone"
         self.unsure_below = unsure_below
         self.outage_risk = outage_risk
@@ -46,6 +46,7 @@ class LogTriage:
         self.question = question
         self.criteria = criteria
         self.routes = routes
+        self.unknown_route = unknown_route
 
     def payload(self, state):
         return {
@@ -65,6 +66,8 @@ class LogTriage:
         return data
 
     def route(self, choice, confidence, probabilities):
+        if choice not in self.routes:
+            return self.unknown_route, f"decider answered {choice!r}, which is not in the routes table; sent to {self.unknown_route}"
         outage = probabilities.get("ongoing_outage", 0)
         if self.routes[choice] == "escalate":
             return "escalate", f"decider saw {choice} at {confidence:.2f}"
@@ -72,7 +75,7 @@ class LogTriage:
             return "escalate", f"chose {choice} but P(ongoing_outage)={outage:.2f} >= {self.outage_risk}"
         if confidence < self.unsure_below:
             ranked = sorted(probabilities, key=probabilities.get, reverse=True)
-            runner_up = next((c for c in ranked if c != choice), choice)
+            runner_up = next((c for c in ranked if c != choice and c in self.routes), choice)
             safer = max(self.routes[choice], self.routes[runner_up], key=SEVERITY.index)
             if safer == "escalate":
                 safer = "notify"
@@ -82,7 +85,7 @@ class LogTriage:
     def __call__(self, state):
         data = self.ask(state)
         answer = data["answers"]["what"]
-        choice = answer["choice"]
+        choice = answer.get("choice")
         confidence = float(answer.get("confidence", 0))
         probabilities = answer.get("probabilities", {})
         route, reason = self.route(choice, confidence, probabilities)

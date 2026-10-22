@@ -168,6 +168,35 @@ class RedactTest(unittest.TestCase):
             self.assertNotIn(secret, out)
         self.assertIn("ok=1", out)
 
+    def test_names_with_underscores_urls_and_known_tokens(self):
+        lines = {
+            "AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG": "wJalrXUtnFEMI",
+            "OPENAI_API_KEY=sk-proj-abcdefghijklmnopqrstuvwxyz": "sk-proj",
+            "POSTGRES_PASSWORD: hunter2": "hunter2",
+            "DB_PASS=s3cret": "s3cret",
+            "connecting to postgres://app:pw123@db:5432/app": "pw123",
+            '{"password": "two words"}': "two words",
+            "Authorization: Basic dXNlcjpwYXNz": "dXNlcjpwYXNz",
+            "key id AKIAIOSFODNN7EXAMPLE": "AKIAIOSFODNN7EXAMPLE",
+            "GITHUB_TOKEN=ghp_abcdefghijklmnopqrstuvwxyz0123456789": "ghp_",
+        }
+        for line, secret in lines.items():
+            self.assertNotIn(secret, redact(line), line)
+
+    def test_ordinary_log_lines_survive(self):
+        for line in (
+            "FATAL: could not connect to database at db:5432: connection refused",
+            "status=exited exit_code=1 oom_killed=false restarts=0 image=alpine:3.20",
+            "AWS_PROFILE=homelab-backup-writer RESTIC_REPOSITORY=s3:s3.amazonaws.com/bucket",
+        ):
+            self.assertEqual(redact(line), line)
+
+    def test_tool_output_is_redacted_before_it_is_cut(self):
+        from sentinel.tools import run
+
+        out = run(["sh", "-c", "printf 'x%.0s' $(seq 1 50); echo; echo MY_SECRET_TOKEN=abcdef"], limit=20)
+        self.assertNotIn("abcdef", out)
+
 
 if __name__ == "__main__":
     unittest.main()

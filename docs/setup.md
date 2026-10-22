@@ -73,6 +73,7 @@ cp .env.example .env
 | `MAX_BEDROCK_CALLS_PER_HOUR` | hard cap enforced by `BedrockBudget` (default 20) |
 | `UNSURE_BELOW`, `OUTAGE_RISK` | the two thresholds of the routing policy (0.5, 0.25) |
 | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | optional; without them decisions only go to the console and the log |
+| `TELEGRAM_COOLDOWN`, `TELEGRAM_ESCALATE_COOLDOWN` | per-service quiet period for notify (600 s) and escalate (900 s); suppressed repeats are counted in the next alert |
 | `NETDATA_URL`, `LIFEBOAT_INTERVAL`, `COALESCE_SECONDS` | collectors |
 
 Telegram: create a bot with @BotFather, put the token in `.env`, send your bot any message, then `python -m sentinel.notify` prints your chat id and `python -m sentinel.notify test` sends a test message.

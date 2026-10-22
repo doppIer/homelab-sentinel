@@ -44,8 +44,10 @@ print(result.route, result.choice, result.confidence, result.reason)
 To fit your own stack, keep the shape and change the categories and the `routes` table:
 
 ```python
-LogTriage(url, criteria=my_categories, routes=my_routes, unsure_below=0.5, outage_risk=0.25)
+LogTriage(url, criteria=my_categories, routes=my_routes, unsure_below=0.5, outage_risk=0.25, unknown_route="notify")
 ```
+
+If Decider ever answers with a category that is not in `routes`, the event goes to `unknown_route` instead of raising, so nothing is lost.
 
 ## Wire it into a Strands agent
 

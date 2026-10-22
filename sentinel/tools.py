@@ -6,14 +6,7 @@ import time
 
 from strands import tool
 
-SECRET = re.compile(r"(?i)\b(token|secret|password|passwd|api[_-]?key|authorization)(\s*[=:]\s*)(\S+)")
-BEARER = re.compile(r"(?i)bearer\s+[A-Za-z0-9._~+/=-]+")
-
-
-def redact(text):
-    text = BEARER.sub("Bearer ***", text)
-    return SECRET.sub(lambda m: f"{m.group(1)}{m.group(2)}***", text)
-
+from sentinel.redact import redact
 
 def run(cmd, limit=6000):
     try:
@@ -21,7 +14,7 @@ def run(cmd, limit=6000):
         text = (out.stdout + out.stderr).strip()
     except Exception as e:
         text = f"{type(e).__name__}: {e}"
-    return redact(text[-limit:])
+    return redact(text)[-limit:]
 
 
 def container_names():

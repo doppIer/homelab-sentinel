@@ -126,6 +126,19 @@ class RouteTest(unittest.TestCase):
         p = self.probs(recovered_failure=0.46, planned_change=0.38, routine=0.11, ongoing_outage=0.04)
         self.assertEqual(self.triage.route("recovered_failure", 0.33, p)[0], "notify")
 
+    def test_unknown_category_is_not_lost(self):
+        p = self.probs(maintenance=0.7, planned_change=0.2)
+        route, reason = self.triage.route("maintenance", 0.7, p)
+        self.assertEqual(route, "notify")
+        self.assertIn("not in the routes table", reason)
+        self.assertEqual(self.triage.route(None, 0.0, {})[0], "notify")
+
+    def test_unknown_runner_up_is_skipped(self):
+        p = self.probs(planned_change=0.45, maintenance=0.40, recovered_failure=0.10)
+        route, reason = self.triage.route("planned_change", 0.45, p)
+        self.assertEqual(route, "notify")
+        self.assertIn("recovered_failure", reason)
+
     def test_hidden_outage_risk_escalates(self):
         p = self.probs(planned_change=0.66, ongoing_outage=0.30)
         route, reason = self.triage.route("planned_change", 0.6, p)

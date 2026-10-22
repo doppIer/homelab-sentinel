@@ -1,4 +1,6 @@
+import ctypes
 import json
+import signal
 import subprocess
 import time
 from collections import defaultdict, deque
@@ -179,15 +181,26 @@ class DockerEvents:
 
     def stream(self):
         while True:
-            proc = subprocess.Popen(self.command(), stdout=subprocess.PIPE, text=True)
-            for line in proc.stdout:
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    raw = json.loads(line)
-                except json.JSONDecodeError:
-                    continue
-                yield self.to_event(raw)
-            proc.wait()
+            proc = subprocess.Popen(self.command(), stdout=subprocess.PIPE, text=True, preexec_fn=die_with_parent)
+            try:
+                for line in proc.stdout:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        raw = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+                    yield self.to_event(raw)
+                proc.wait()
+            finally:
+                if proc.poll() is None:
+                    proc.kill()
             time.sleep(5)
+
+
+def die_with_parent():
+    try:
+        ctypes.CDLL("libc.so.6").prctl(1, signal.SIGTERM)
+    except (OSError, AttributeError):
+        pass

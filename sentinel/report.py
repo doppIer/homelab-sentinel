@@ -91,10 +91,26 @@ def summarize(rows, label, reference):
     return "\n".join(out)
 
 
+def detail(rows):
+    out = ["### Every event", ""]
+    for r in sorted(rows, key=lambda r: r["ts"]):
+        stamp = datetime.fromtimestamp(r["ts"], tz=timezone.utc).strftime("%H:%M:%S")
+        probs = r.get("probabilities") or {}
+        top = sorted(probs, key=probs.get, reverse=True)[:2]
+        ranked = ", ".join(f"{k} {probs[k]:.2f}" for k in top)
+        tokens = f" bedrock {r['bedrock_input_tokens']}/{r['bedrock_output_tokens']}" if r.get("bedrock_input_tokens") else ""
+        out.append(f"- {stamp} {r.get('source')}/{r.get('subject')} -> {r.get('route')} ({ranked}){tokens}")
+        out.append(f"  state: {str(r.get('state', ''))[:240]}")
+        if r.get("analysis"):
+            out.append(f"  analysis: {r['analysis'][:400]}".replace("\n", " | "))
+    return "\n".join(out) + "\n"
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--log", default=os.getenv("DECISION_LOG", "logs/decisions.jsonl"))
     parser.add_argument("--since", default=DEFAULT_SINCE)
+    parser.add_argument("--detail", action="store_true")
     args = parser.parse_args()
     since = datetime.fromisoformat(args.since).timestamp()
     rows = load(args.log, since)
@@ -106,6 +122,8 @@ def main():
     print(summarize(rows, "All events", reference))
     print(summarize(real, "Real containers and backups (demo scenarios excluded)", reference))
     print(summarize(demo, "Demo scenarios", reference))
+    if args.detail:
+        print(detail(rows))
 
 
 if __name__ == "__main__":

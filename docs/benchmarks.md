@@ -175,3 +175,35 @@ Transient unit fails with `s3.PutObject: Access Denied (403)`. Decider `data_at_
 3. It invented `/etc/lifeboat/demo.env`. The prompt now carries the real lifeboat paths and says not to guess paths.
 
 After the fixes, same demo: `data_at_risk` 0.85 in 3.9 s, Sonnet 4.6 ~5 s, 3,999 + 310 tokens (~$0.018). The reply starts with `Cause:`, names `AWS_PROFILE=homelab-backup-writer` and `/etc/homelab-lifeboat/backup.env`, notices that both demo runs failed with the same 403, rules out host resources, and no longer mentions a timer that does not exist.
+
+## Live scenario, day 4 (`scripts/scenario.sh`, 2026-10-22 09:29-09:40 UTC)
+
+Real containers on the live server, then the three demo failures. int8 + bf16 embeddings, six categories, final policy. Probabilities below are Decider's; the report's `confidence` field is a separate number and is slightly lower.
+
+| Time (UTC) | Event | Top two | Route | Bedrock tokens |
+|---|---|---|---|---|
+| 09:29:21 | `docker restart mympd` | planned_change 0.76, recovered_failure 0.08 | digest | |
+| 09:30:01 | `docker restart dozzle` | planned_change 0.46, recovered_failure 0.36 | notify (unsure) | |
+| 09:30:51 | `docker restart dashdot` (ignored SIGTERM, SIGKILL at stop timeout, exit 137) | recovered_failure 0.50, planned_change 0.21 | notify | |
+| 09:31:32 | `docker stop homarr` | ongoing_outage 0.59, planned_change 0.22 | escalate | 6,242 / 294 |
+| 09:32:12 | `docker start homarr` | routine 0.50, planned_change 0.21 | digest | |
+| 09:32:52 | demo crash (db unreachable) | ongoing_outage 0.60, recovered_failure 0.13 | escalate | 3,309 / 262 |
+| 09:33:53 | demo OOM (64 MB limit) | ongoing_outage 0.46, recovered_failure 0.18 | escalate | 6,122 / 348 |
+| 09:35:01 | Netdata `mem.oom_kill` (same OOM) | resource_risk 0.68, ongoing_outage 0.12 | notify | |
+| 09:40:01 | demo backup (S3 403) | data_at_risk 0.87, routine 0.05 | escalate | 4,289 / 368 |
+
+| | All | Real containers + Netdata | Demo failures |
+|---|---|---|---|
+| Events | 9 | 6 | 3 |
+| Handled by Decider alone | 5 (56%) | 5 (83%) | 0 |
+| Bedrock tokens in / out | 19,962 / 1,272 | 6,242 / 294 | 13,720 / 978 |
+| Bedrock cost, actual | $0.0869 | $0.0254 | $0.0614 |
+| If every event went to Bedrock ($0.0217 each) | $0.1954 | $0.1303 | $0.0651 |
+| Decider latency median / p95 | 3.7 s / 4.3 s | 3.6 s / 4.3 s | 3.8 s / 4.0 s |
+
+All three demo failures escalated and Sonnet 4.6 diagnosed each correctly (db:5432 unreachable; 64 MB limit with 7.7 GiB free on the host; S3 write key in `/etc/homelab-lifeboat/backup.env`). One false escalation: a deliberate `docker stop homarr` looks like a service that is down. Sonnet answered that it was an intentional clean stop (exit 0, "User requested shutdown"). Per-incident cost in this run: $0.015-0.026.
+
+## Real traffic, Tue 20 Oct 17:28 UTC to Thu 22 Oct 09:20 UTC
+
+About 40 hours with the final policy and zero events from any collector. Checked that the collectors were alive (a manual `docker restart mympd` was logged 18 s later). Daily digests: 20 Oct, 12 events, Haiku 4.5 1,196 / 227 tokens; 21 Oct, 0 events, no Bedrock call.
+

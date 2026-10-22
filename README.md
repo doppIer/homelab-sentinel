@@ -64,9 +64,10 @@ Dell T1700, Intel i5-4590 (2014, 4 cores, no GPU), 16 GB RAM, 17 other container
 | Decider decision (int8 + bf16 embeddings) | 3.1-3.7 s, 4.0 GB RAM (fp32: 7.7 GB), $0 |
 | Fixtures in the expected category | 10 of 10 |
 | Fixtures that reached Bedrock | 4 of 10, exactly the outages and failed backups |
-| Outage analysis, Sonnet 4.6 | about 5 s, $0.014-0.018 per incident |
+| Outage analysis, Sonnet 4.6 | about 5 s, $0.014-0.026 per incident |
 | Real traffic, Tue 17:28 to Thu 12:20 UTC (about 40 h) | 0 events, 0 Bedrock calls, $0; the 21:00 digest skipped Bedrock |
-| Live scenario run: {{SCENARIO_EVENTS}} events | {{SCENARIO_LOCAL}} handled by Decider alone, {{SCENARIO_BEDROCK}} sent to Bedrock, ${{SCENARIO_COST}} actual vs ${{SCENARIO_ALL}} if every event went to Bedrock |
+| 10-minute live scenario on the same server: 9 events | 5 handled by Decider alone, 4 sent to Bedrock, $0.087 actual vs $0.195 if every event went to Bedrock |
+| Planned operations on 4 real containers (6 events incl. one Netdata alarm) | 5 stayed local; 1 false escalation (a deliberate `docker stop`), $0.025 |
 
 ## Try it
 

@@ -50,4 +50,5 @@ Hardware: Dell T1700 SFF, Intel i5-4590 (2014, 4 cores, AVX2, no bf16), 16 GB RA
 - Checked that zero meant quiet and not broken: `docker restart mympd` reached the log 18 s later as `planned_change` 0.72, route digest.
 - Found three orphaned `docker events` processes left by earlier manual runs. The child now gets SIGTERM when its parent dies (`PR_SET_PDEATHSIG`).
 - `scripts/scenario.sh`: a 10-minute live run (planned restarts and a stop/start on real containers, then crash, OOM and failed backup) followed by the report for exactly that window.
+- Scenario result: 9 events in 11 minutes. 5 handled by Decider alone, 4 to Bedrock, $0.087 actual vs $0.195 if all had gone to Bedrock. All three real failures escalated and diagnosed correctly. One false escalation: `docker stop homarr` (ongoing_outage 0.59); Sonnet confirmed a clean intentional stop for $0.025. dashdot ignored SIGTERM and was SIGKILLed at the stop timeout; Decider called it `recovered_failure` (notify).
 - README, setup guide, demo script and article.

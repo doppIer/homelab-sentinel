@@ -2,7 +2,7 @@
 
 Tags: `#strands-decider-2b` `#policy`
 
-Code: {{REPO_URL}} · Demo: {{VIDEO_URL}}
+Code: https://github.com/doppIer/homelab-sentinel · Demo: {{VIDEO_URL}}
 
 My home server is a Dell T1700 from 2014: an Intel i5-4590, 16 GB of RAM, no GPU, and 17 Docker containers. It produces a steady trickle of events. Containers restart after updates, Netdata complains about disk space, restic backups run every six hours. Almost none of it needs me. Once in a while something breaks and I want to know why, quickly, ideally with the command that fixes it.
 
@@ -97,11 +97,29 @@ Then I quantized it. Every linear layer outside the LoRA adapters became a dynam
 | Decider decision | 3.1-3.7 s on the i5-4590, 4.0 GB RAM, $0 |
 | Test events in the expected category | 10 of 10 |
 | Test events sent to Bedrock | 4 of 10: the two outages and the two backup problems |
-| Outage analysis with Sonnet 4.6 | about 5 s, $0.014-0.018 |
+| Outage analysis with Sonnet 4.6 | about 5 s, $0.014-0.026 |
 | About 40 hours of real traffic | 0 events, 0 Bedrock calls; the evening digest skipped Bedrock too |
-| 10-minute live scenario | {{SCENARIO_EVENTS}} events, {{SCENARIO_LOCAL}} handled by Decider alone, ${{SCENARIO_COST}} actual vs ${{SCENARIO_ALL}} if every event had gone to Bedrock |
+| 10-minute live scenario | 9 events, 5 handled by Decider alone, $0.087 actual vs $0.195 if every event had gone to Bedrock |
 
-The 40 quiet hours are a real result. Nothing on the server crashed, restarted or ran out of space, so nothing got through the gate and the bill was zero. To see the whole pipeline under load, I ran a ten-minute scenario on the live server: planned restarts and a stop/start of real containers, a crashing container, an out-of-memory container and a failing backup.
+The 40 quiet hours are a real result. Nothing on the server crashed, restarted or ran out of space, so the gate had nothing to look at and the bill was zero. To see the whole pipeline under load, I ran a ten-minute scenario on the live server: three restarts and a stop/start of real containers, then a crashing container, an out-of-memory container and a failing backup.
+
+| Event | Decider (top two) | Route |
+|---|---|---|
+| `docker restart mympd` | planned_change 0.76 | digest |
+| `docker restart dozzle` | planned_change 0.46, recovered_failure 0.36 | notify (unsure) |
+| `docker restart dashdot` | recovered_failure 0.50 | notify |
+| `docker stop homarr` | ongoing_outage 0.59 | escalate, Bedrock |
+| `docker start homarr` | routine 0.50 | digest |
+| container that cannot reach its database | ongoing_outage 0.60 | escalate, Bedrock |
+| container over its 64 MB limit | ongoing_outage 0.46 | escalate, Bedrock |
+| Netdata `mem.oom_kill` alarm (from the same OOM) | resource_risk 0.68 | notify |
+| restic backup fails with S3 403 | data_at_risk 0.87 | escalate, Bedrock |
+
+All three real failures reached Sonnet, and all three diagnoses were right: the unreachable database at `db:5432`, the 64 MB limit (and that the host itself had 7.7 GB free), and the S3 write key in the backup config. The two harmless restarts and the start stayed local.
+
+Two results surprised me, and I left both in. dashdot did not exit on SIGTERM, so Docker killed it with SIGKILL after the stop timeout. Decider called that a recovered failure. I think that is fair, since the container does not shut down cleanly, and it cost a Telegram message, not a model call.
+
+`docker stop homarr` went to Bedrock. From the event alone, a container I stopped on purpose looks exactly like a service that is down, and Decider cannot know whether I want it to stay down. Sonnet read the logs and replied that it was an intentional, clean stop with exit code 0, which cost 2.5 cents. That is the one false escalation in the run. I would rather pay that than teach the gate to ignore stopped containers.
 
 I also compared Haiku 4.5 and Sonnet 4.6 for the outage analysis. Both found the causes. Haiku's fix for the out-of-memory case raised `--memory` without `--memory-swap`, which Docker rejects for that container. The analysis is the message I copy commands from at 3 a.m., so it stays on Sonnet. The digest only summarizes and suggests nothing to run, so it uses Haiku.
 

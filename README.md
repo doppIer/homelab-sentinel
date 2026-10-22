@@ -8,6 +8,10 @@ Strands Decider 2B runs on a 2014 CPU in my homelab and looks at every event the
 
 Built for the AWS Agent Experience Hackathon. Decision pattern: `#policy`.
 
+[![Demo video, 1:50: watch on YouTube](docs/assets/thumbnail.png)](https://youtu.be/j9PYNzrp5UE)
+
+**Demo video (1:50):** https://youtu.be/j9PYNzrp5UE
+
 ## How it works
 
 ```

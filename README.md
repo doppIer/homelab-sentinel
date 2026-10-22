@@ -1,4 +1,6 @@
-# homelab-sentinel
+<p align="center"><img src="docs/assets/logo.svg" width="128" alt="homelab-sentinel logo: a gate that lets only the red event through"></p>
+
+<h1 align="center">homelab-sentinel</h1>
 
 A small local model decides which events deserve a big one.
 
